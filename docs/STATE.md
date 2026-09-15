@@ -162,6 +162,19 @@ El usuario, probando un caso real (mod de AzerothCore recomendando Claude Code),
 
 Verificado: `npm run typecheck`, `npm test` (6/6) y `npm run build` sin errores tras el cambio.
 
+## v0.10.2 — decision_references ya no puede apuntar a recomendaciones ni a decisiones aplazables
+
+El usuario, revisando el caso real de AzerothCore, detectó que la sección de Claude Code ("Decisiones relevantes para esta tarea") listaba cosas como "Estructura dels mods", "Reutilitzar mòduls existents" y "Ordre d'implementació" como si fueran decisiones pendientes, cuando en realidad eran `recommendations` ya resueltas por la IA — daba la falsa impresión de que había que consultarlas o decidirlas.
+
+**Causa raíz:** la regla 4 del system prompt (`server/deepseek.ts`) permitía que `claude_code.decision_references` referenciara temas de tres categorías (`necessary_decisions`, `important_pending_decisions` **o `recommendations`**). El validador de v0.10.0 (`findDuplicateDecisionTopic`) no detectaba esto como contradicción porque técnicamente no había duplicado incompatible — era un fallo de diseño de qué categorías son válidas como referencia, no un caso que el mecanismo de v0.10.0 estuviera pensado para cubrir.
+
+**Cambio (mínimo, sin tocar arquitectura ni el motor de recomendación de IA):**
+- System prompt: `decision_references` ahora solo puede referenciar `necessary_decisions` o `important_pending_decisions` — nunca `recommendations` ni `deferrable_decisions`. Si se quiere que Claude Code aplique una recomendación, debe ir en `persistent_instructions` con su propio texto, no mezclada como decisión pendiente.
+- `server/schema.ts`: nueva función `collectPendingDecisionTopics()` (solo las 2 categorías realmente pendientes) usada para validar `decision_references`, sustituyendo la anterior `collectDecisionTopics()` (que en la práctica había quedado como código muerto — no se llamaba desde ningún sitio tras el cambio de v0.10.0, `findDuplicateDecisionTopic()` hace su propia recolección internamente). Se eliminó por limpieza.
+- 9 tests nuevos en `server/schema.test.ts`: casos representativos de las 4 categorías, una decisión que solo necesita confirmación en fase posterior, y un test explícito de la contradicción "puede decidir" (recommendation) vs "debe consultar" (necessary_decision) sobre el mismo topic — confirma que el validador la detecta y rechaza. Total: 15/15 tests pasan.
+
+**Verificado con el mismo caso real de AzerothCore:** `claude_code.decision_references` ahora solo contiene las 4 decisiones de `important_pending_decisions` (enfoque C++/Lua, significado de "torneig de twins", economía de la subhasta, specs de NPCs); ninguna de las 4 `recommendations` ("seguir estructura oficial", "reutilizar proyectos de GitHub", "orden de desarrollo", "configurabilidad") aparece ya en esa lista — en su lugar, la recomendación de seguir la estructura oficial se refleja correctamente en `claude_code.persistent_instructions`.
+
 ## Pendiente / no hecho todavía
 
 - Entrega del entorno de trabajo de Claude Code solo por copiar/pegar archivo a archivo — no genera un .zip descargable ni escribe directamente al disco (la app no tiene acceso al sistema de archivos del usuario). Aceptado conscientemente para esta versión; podría mejorarse más adelante si aporta valor suficiente.

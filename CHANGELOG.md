@@ -4,6 +4,12 @@ Aquí se explica, en lenguaje sencillo, qué ha cambiado en cada versión de la 
 
 El número de versión tiene tres partes (por ejemplo 0.2.0): la primera cambia cuando hay un cambio muy grande, la segunda cuando se añade algo nuevo o se mejora algo existente, y la tercera cuando se corrige un error pequeño.
 
+## [0.10.2] - 2026-09-15
+
+### Corregido
+- La sección para Claude Code a veces listaba como "decisión relevante" algo que en realidad ya era una recomendación resuelta por la IA (por ejemplo, "reutilizar módulos existentes" o "seguir la estructura oficial"), dando la falsa impresión de que había que consultarlo o decidirlo cuando ya estaba resuelto. Ahora esa lista solo puede contener decisiones realmente pendientes (las que bloquean o las importantes-no-bloqueantes); las recomendaciones aplicables se incorporan como instrucciones de trabajo normales.
+- Se añaden 9 tests automatizados nuevos que comprueban específicamente que no se mezclen categorías de decisión de forma contradictoria.
+
 ## [0.10.1] - 2026-09-15
 
 ### Cambiado

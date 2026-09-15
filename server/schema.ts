@@ -165,25 +165,18 @@ function isClaudeCodeSection(value: unknown, validDecisionTopics: Set<string>): 
 }
 
 /**
- * Recoge todos los "question"/"topic" de las cuatro categorías de decisiones
- * (necessary, important-pending, recommendations, deferrable) para poder
- * comprobar que: (a) cada decisión vive en una sola categoría (nunca
- * duplicada entre ellas) y (b) "claude_code.decision_references" solo
- * apunta a temas que existen de verdad, evitando que la sección de Claude
- * Code reclasifique o repita una decisión con una instrucción distinta.
+ * Recoge solo los "question"/"topic" de decisiones REALMENTE pendientes
+ * (necessary + important-pending), para validar que "claude_code.decision_references"
+ * nunca apunte a una "recommendation" o "deferrable_decision" — una recomendación
+ * ya es una instrucción de trabajo resuelta, no una decisión abierta que el
+ * agente deba "tener en cuenta" como pendiente.
  */
-function collectDecisionTopics(v: Record<string, unknown>): Set<string> {
+function collectPendingDecisionTopics(v: Record<string, unknown>): Set<string> {
   const topics = new Set<string>();
   for (const item of (v.necessary_decisions as NecessaryDecision[] | undefined) ?? []) {
     topics.add(item.question);
   }
   for (const item of (v.important_pending_decisions as ImportantPendingDecision[] | undefined) ?? []) {
-    topics.add(item.topic);
-  }
-  for (const item of (v.recommendations as Recommendation[] | undefined) ?? []) {
-    topics.add(item.topic);
-  }
-  for (const item of (v.deferrable_decisions as DeferrableDecision[] | undefined) ?? []) {
     topics.add(item.topic);
   }
   return topics;
@@ -288,9 +281,9 @@ export function validateStructuredPrompt(value: unknown, validToolIds: Set<strin
   if (typeof v.final_prompt !== "string" || v.final_prompt.trim() === "") {
     throw new SchemaValidationError("Falta el campo 'final_prompt' (string no vacío).");
   }
-  if (v.claude_code !== null && !isClaudeCodeSection(v.claude_code, collectDecisionTopics(v))) {
+  if (v.claude_code !== null && !isClaudeCodeSection(v.claude_code, collectPendingDecisionTopics(v))) {
     throw new SchemaValidationError(
-      "El campo 'claude_code' tiene un formato inválido o 'decision_references' apunta a un tema que no existe en ninguna categoría de decisiones."
+      "El campo 'claude_code' tiene un formato inválido, o 'decision_references' apunta a un tema que no existe en 'necessary_decisions'/'important_pending_decisions', o referencia una 'recommendation'/'deferrable_decision' (que no son decisiones pendientes)."
     );
   }
   if (v.is_software_request === true && v.claude_code === null) {
