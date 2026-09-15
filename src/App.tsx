@@ -342,7 +342,14 @@ export default function App() {
           </div>
         ))}
 
-        <RequestInput value={userRequest} onChange={setUserRequest} onSubmit={startRequest} loading={loading} />
+        <RequestInput
+          value={userRequest}
+          onChange={setUserRequest}
+          onSubmit={startRequest}
+          loading={loading}
+          onNewRequest={startNewConversation}
+          showNewRequest={thread.length > 0 || userRequest.trim().length > 0}
+        />
 
         {error && <div className="error-banner">{error}</div>}
 

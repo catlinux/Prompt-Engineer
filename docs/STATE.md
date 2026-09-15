@@ -290,19 +290,21 @@ Se pidió mostrar el saldo disponible en DeepSeek y el consumo de la última con
 
 Verificado: `npm run typecheck` y `npm run build` sin errores.
 
+## v0.16.1 — Botón "Nueva consulta" junto al campo de entrada
+
+Pedido por el usuario desde hace varias versiones (ver CHANGELOG histórico). Ya existía la opción de empezar una consulta nueva desde la barra lateral (`Sidebar.tsx`, `startNewConversation()`); esta versión añade el mismo botón junto al campo de texto (`RequestInput.tsx`, prop `onNewRequest`/`showNewRequest`), visible solo cuando hay una conversación en curso o texto ya escrito — reutiliza la misma función, sin lógica nueva.
+
+Verificado: `npm run typecheck`, `npm test` (22/22) y `npm run build` sin errores.
+
 ## Pendiente / no hecho todavía
 
-- **La lentitud sigue sin resolverse del todo:** el cuello de botella real no es solo el volumen de tokens de salida, sino el tiempo de razonamiento del modelo. Pendiente de decidir con el usuario: medir `deepseek-v4-pro` (ya configurado en `.env`, pendiente de que el usuario reinicie `npm run dev` para probarlo) frente a `deepseek-flash`; considerar si el streaming de la respuesta (pintar el texto según llega, en vez de esperar el JSON completo) merece la pena dado que la respuesta es un único objeto JSON que no se puede parsear hasta estar completo.
-- Entrega del entorno de trabajo de Claude Code solo por copiar/pegar archivo a archivo — no genera un .zip descargable ni escribe directamente al disco (la app no tiene acceso al sistema de archivos del usuario). Aceptado conscientemente para esta versión; podría mejorarse más adelante si aporta valor suficiente.
-- Observación menor de la revisión v0.13.0 (no confirmada como patrón, solo un caso): en la prueba real, las 4 decisiones no relacionadas con investigar el proyecto salieron todas como `decided_by: "user"`. Podría ser correcto para ese caso concreto (trading implica muchas preferencias de riesgo genuinamente personales) o podría indicar una ligera tendencia a usar "user" por defecto — vigilar en próximas pruebas antes de decidir si hace falta ajustar la regla 2b.
-
-- Botón para borrar la petición actual y empezar una consulta nueva, cerca del campo de entrada de texto. Pedido por el usuario, no implementado todavía.
-- Mejorar la actualización de las recomendaciones de IA para que no dependa de tener un agente con búsqueda web (por ejemplo con una API de búsqueda propia del backend) — limitación conocida y aceptada de v0.5.0, ver arriba.
-
-- Posible mejora del system prompt (detectada revisando la respuesta del caso "bot de trading"): el `final_prompt` no siempre repite con la misma fuerza que `claude_code.documentation_to_create` la instrucción de crear documentación persistente (CLAUDE.md/docs/), y los criterios de verificación no siempre incluyen comprobar que no se han subido credenciales a git pese a que las instrucciones persistentes sí lo piden. Ajuste menor, no bloqueante.
-- Tests automatizados muy limitados: solo cubren la validación de coherencia de `server/schema.ts` (`npm test`, 6 tests). El resto del proyecto (frontend, integración con DeepSeek) sigue verificándose solo a mano.
-- Sin persistencia/historial de peticiones (deliberadamente fuera de v1, ver DECISIONS.md)
-- Sin gestión de rate-limiting ni de peticiones concurrentes en el backend
+- **La lentitud sigue sin resolverse del todo:** el cuello de botella real no es solo el volumen de tokens de salida, sino el tiempo de razonamiento del modelo. Pendiente de decidir con el usuario: medir `deepseek-v4-pro` (ya configurado en `.env`) frente a `deepseek-flash`; considerar si el streaming de la respuesta merece la pena dado que la respuesta es un único objeto JSON que no se puede parsear hasta estar completo.
+- Entrega del entorno de trabajo de Claude Code solo por copiar/pegar archivo a archivo — no genera un .zip descargable ni escribe directamente al disco. Aceptado conscientemente; podría mejorarse más adelante si aporta valor suficiente.
+- Observación menor de la revisión v0.13.0 (no confirmada como patrón, solo un caso): en una prueba real, varias decisiones no relacionadas con investigar el proyecto salieron todas como `decided_by: "user"`. Vigilar en próximas pruebas antes de decidir si hace falta ajustar la regla 2b.
+- Mejorar la actualización de las recomendaciones de IA para que no dependa de tener un agente con búsqueda web — limitación conocida y aceptada de v0.5.0, ver arriba.
+- Posible mejora del system prompt: el `final_prompt` no siempre repite con la misma fuerza que `claude_code.documentation_to_create` la instrucción de crear documentación persistente, y los criterios de verificación no siempre incluyen comprobar que no se han subido credenciales a git. Ajuste menor, no bloqueante.
+- Tests automatizados limitados: solo cubren la validación de coherencia de `server/schema.ts` (`npm test`, 22 tests). El resto del proyecto (frontend, integración con DeepSeek) sigue verificándose solo a mano.
+- Sin gestión de rate-limiting ni de peticiones concurrentes en el backend.
 
 ## Decisión pendiente abierta
 

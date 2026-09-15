@@ -5,9 +5,11 @@ interface RequestInputProps {
   onChange: (value: string) => void;
   onSubmit: () => void;
   loading: boolean;
+  onNewRequest?: () => void;
+  showNewRequest?: boolean;
 }
 
-export function RequestInput({ value, onChange, onSubmit, loading }: RequestInputProps) {
+export function RequestInput({ value, onChange, onSubmit, loading, onNewRequest, showNewRequest }: RequestInputProps) {
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
       onSubmit();
@@ -16,7 +18,14 @@ export function RequestInput({ value, onChange, onSubmit, loading }: RequestInpu
 
   return (
     <div className="request-input">
-      <label htmlFor="user-request">Describe qué quieres conseguir</label>
+      <div className="request-input__label-row">
+        <label htmlFor="user-request">Describe qué quieres conseguir</label>
+        {showNewRequest && (
+          <button type="button" className="request-input__new" onClick={onNewRequest} disabled={loading}>
+            Nueva consulta
+          </button>
+        )}
+      </div>
       <textarea
         id="user-request"
         value={value}

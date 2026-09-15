@@ -139,9 +139,31 @@ h1 {
   gap: 10px;
 }
 
+.request-input__label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .request-input label {
   font-weight: 600;
   font-size: 0.95rem;
+}
+
+.request-input__new {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.request-input__new:hover:not(:disabled) {
+  color: var(--fg);
+  border-color: var(--fg);
+  opacity: 1;
 }
 
 .request-input textarea {
