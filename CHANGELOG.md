@@ -4,6 +4,12 @@ Aquí se explica, en lenguaje sencillo, qué ha cambiado en cada versión de la 
 
 El número de versión tiene tres partes (por ejemplo 0.2.0): la primera cambia cuando hay un cambio muy grande, la segunda cuando se añade algo nuevo o se mejora algo existente, y la tercera cuando se corrige un error pequeño.
 
+## [0.16.2] - 2026-09-16
+
+### Mejorado
+- Cuando el proyecto va a usar claves o credenciales, el prompt final ahora recuerda expresamente comprobar que no se han subido al repositorio.
+- El prompt final ahora menciona con la misma fuerza que la sección aparte la instrucción de crear y mantener documentación persistente (README, .env.example, decisiones técnicas), en vez de darla solo por implícita.
+
 ## [0.16.1] - 2026-09-16
 
 ### Añadido

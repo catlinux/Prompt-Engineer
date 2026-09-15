@@ -296,13 +296,25 @@ Pedido por el usuario desde hace varias versiones (ver CHANGELOG histórico). Ya
 
 Verificado: `npm run typecheck`, `npm test` (22/22) y `npm run build` sin errores.
 
+## v0.16.2 — final_prompt refuerza documentación persistente y verificación de credenciales
+
+Dos ajustes menores al `SYSTEM_PROMPT` (`server/deepseek.ts`), detectados revisando el caso "bot de trading" en versiones anteriores:
+
+1. Nueva instrucción en la regla 6 (`final_prompt`): si `claude_code.documentation_to_create` no está vacío, `final_prompt` debe mencionar con la misma fuerza que la sección aparte la instrucción de crear y mantener esa documentación.
+2. Nueva instrucción en la regla 7: si `is_software_request` es true y el proyecto usa alguna credencial (API keys, contraseñas, secretos de terceros), `verification_criteria` debe incluir un criterio explícito de comprobar que no se han subido credenciales al repositorio ni al historial de git. No se añade si el proyecto no maneja ninguna credencial real.
+
+Cambio solo de texto del prompt — no toca `server/schema.ts` ni el modelo de datos, así que no requiere tests nuevos.
+
+**Verificado con llamada real** (bot de trading conectado a la API de Binance) contra una instancia de depuración aislada (puerto 3098): `verification_criteria` incluyó dos criterios explícitos de credenciales (código fuente/historial de git, y variables de entorno sin logs); `final_prompt` mencionó expresamente crear `.env.example` y el registro de decisiones técnicas, y reforzó "no incluyas credenciales reales... verifica que .gitignore excluya .env".
+
+Verificado: `npm run typecheck`, `npm test` (22/22) y `npm run build` sin errores.
+
 ## Pendiente / no hecho todavía
 
 - **La lentitud sigue sin resolverse del todo:** el cuello de botella real no es solo el volumen de tokens de salida, sino el tiempo de razonamiento del modelo. Pendiente de decidir con el usuario: medir `deepseek-v4-pro` (ya configurado en `.env`) frente a `deepseek-flash`; considerar si el streaming de la respuesta merece la pena dado que la respuesta es un único objeto JSON que no se puede parsear hasta estar completo.
 - Entrega del entorno de trabajo de Claude Code solo por copiar/pegar archivo a archivo — no genera un .zip descargable ni escribe directamente al disco. Aceptado conscientemente; podría mejorarse más adelante si aporta valor suficiente.
 - Observación menor de la revisión v0.13.0 (no confirmada como patrón, solo un caso): en una prueba real, varias decisiones no relacionadas con investigar el proyecto salieron todas como `decided_by: "user"`. Vigilar en próximas pruebas antes de decidir si hace falta ajustar la regla 2b.
 - Mejorar la actualización de las recomendaciones de IA para que no dependa de tener un agente con búsqueda web — limitación conocida y aceptada de v0.5.0, ver arriba.
-- Posible mejora del system prompt: el `final_prompt` no siempre repite con la misma fuerza que `claude_code.documentation_to_create` la instrucción de crear documentación persistente, y los criterios de verificación no siempre incluyen comprobar que no se han subido credenciales a git. Ajuste menor, no bloqueante.
 - Tests automatizados limitados: solo cubren la validación de coherencia de `server/schema.ts` (`npm test`, 22 tests). El resto del proyecto (frontend, integración con DeepSeek) sigue verificándose solo a mano.
 - Sin gestión de rate-limiting ni de peticiones concurrentes en el backend.
 
