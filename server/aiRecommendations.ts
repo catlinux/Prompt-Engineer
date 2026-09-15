@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import type { AiRecommendationsData, AiToolRecommendation, StructuredPrompt } from "../src/types.js";
+import type { AiRecommendationsData, AiToolCatalogEntry } from "../src/types.js";
 
 const DATA_PATH = fileURLToPath(new URL("../config/ai_recommendations.json", import.meta.url));
 
@@ -13,19 +13,35 @@ function loadData(): AiRecommendationsData {
   return cached;
 }
 
+export function getCatalog(): AiToolCatalogEntry[] {
+  return loadData().tools;
+}
+
+export function getValidToolIds(): Set<string> {
+  return new Set(loadData().tools.map((t) => t.id));
+}
+
+export function getCatalogAsRecord(): Record<string, AiToolCatalogEntry> {
+  const record: Record<string, AiToolCatalogEntry> = {};
+  for (const tool of loadData().tools) {
+    record[tool.id] = tool;
+  }
+  return record;
+}
+
 /**
- * Selección determinista, sin IA: busca en el catálogo curado la primera
- * herramienta que cubra la categoría de contenido detectada por DeepSeek.
- * No es una regla exhaustiva, es un punto de partida razonable.
+ * Bloque de texto compacto con el catálogo, pensado para incluirse en el
+ * prompt que recibe DeepSeek. Solo lleva los campos relevantes para decidir
+ * (no repite todo el JSON) — precios/límites detallados se resuelven en la
+ * interfaz a partir del tool_id, no los reescribe la IA.
  */
-export function pickRecommendedTool(result: StructuredPrompt): AiToolRecommendation | null {
+export function formatCatalogForPrompt(): string {
   const data = loadData();
-  if (data.tools.length === 0) return null;
-
-  const match = data.tools.find((t) => t.categories.includes(result.content_category));
-  if (match) return match;
-
-  return data.tools.find((t) => t.categories.includes("texto_general")) ?? data.tools[0];
+  const lines = data.tools.map((t) => {
+    const agentic = t.is_agentic ? "SÍ (agente autónomo)" : "no (herramienta de un solo uso/chat)";
+    return `- id: "${t.id}" | nombre: ${t.name} | categorías: ${t.categories.join(", ")} | ¿es agéntica?: ${agentic} | puntos fuertes: ${t.strengths.join("; ")} | ¿tiene versión gratuita?: ${t.has_free_tier ? "sí" : "no"}`;
+  });
+  return `Catálogo de herramientas de IA disponibles (actualizado: ${data.updated_at}):\n${lines.join("\n")}`;
 }
 
 export function getRecommendationsUpdatedAt(): string {

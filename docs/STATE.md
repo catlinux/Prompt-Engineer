@@ -80,8 +80,32 @@ Verificado con llamadas reales para las tres categorías nuevas más comprobaci�
 
 Verificado con llamada real: petición de software → recomienda Claude.ai; petición no-software → recomienda ChatGPT; `recommendationsUpdatedAt` se sirve correctamente.
 
+## v0.7.0 — Recomendación de IA por juicio real, no por regla fija
+
+El usuario señaló que la selección determinista por categoría (`content_category` → una única herramienta fija) desaprovechaba el potencial real: peticiones con varias subtareas (por ejemplo, una tienda online que necesita desarrollo + textos + imágenes) necesitan poder recomendar varias herramientas distintas, y la elección debe ser un juicio sobre la naturaleza del trabajo, no una coincidencia de categoría.
+
+**Cambio de fondo:** se eliminó `pickRecommendedTool()` (selección determinista en `server/aiRecommendations.ts`). Ahora DeepSeek recibe el catálogo completo como contexto en el mismo mensaje (`formatCatalogForPrompt()`) y decide él mismo, dentro de la misma llamada que ya hace el resto del análisis (sin coste extra de llamadas):
+- `task_breakdown`: qué tareas/subtareas contiene la petición y qué capacidades necesita cada una.
+- `primary`: herramienta principal (`tool_id` del catálogo, nunca inventado — el validador lo comprueba contra los IDs reales).
+- `complementary`: herramientas adicionales cuando distintas partes del trabajo necesiten cosas distintas.
+- `alternatives`: herramientas comparables, con la diferencia explicada — o reconociendo que el catálogo no distingue con confianza (nunca inventa una diferencia).
+
+Este bloque (`ai_tool_recommendation`) es un campo propio de `StructuredPrompt`, separado de `recommendations` (que trata de cómo resolver el proyecto, no de qué herramienta usar) — ver DECISIONS.md.
+
+**Catálogo ampliado:** se separó `claude_ai` (chat, no agéntico) de `claude_code` (agente autónomo) como entradas distintas con un campo `is_agentic`, y se añadió `deepseek` al catálogo (para evitar sesgo: la IA puede recomendarse a sí misma si encaja). Los datos de precio/cuota que la IA no debe inventar (campo `price_note`, límites) solo se resuelven en el backend/frontend a partir del `tool_id`, nunca los reescribe DeepSeek.
+
+**UI:** `SuggestedToolCard.tsx` reescrito para mostrar IA principal, complementarias y alternativas, resolviendo cada `tool_id` contra el catálogo recibido (`toolCatalog` en la respuesta del endpoint).
+
+**Verificado con los tres casos pedidos por el usuario:**
+1. Proyecto de software complejo (plataforma de inventario) → principal: Claude Code (agéntico), complementaria: Claude.ai (diseño/documentación). Distingue correctamente ambas herramientas del mismo proveedor.
+2. Canal de YouTube de divulgación → principal: Claude.ai (guiones/investigación), complementarias: Leonardo AI (miniaturas) y NotebookLM (síntesis de fuentes). Sin ninguna herramienta agéntica, correctamente.
+3. Tienda online (desarrollo + textos + imágenes) → principal: Claude Code, complementarias: Claude.ai (descripciones) y Leonardo AI (imágenes de producto) — las tres subtareas distintas recomendadas con herramientas distintas, como se pedía explícitamente.
+
+Ningún caso recomendó Claude/Anthropic por defecto sin razonamiento explícito; los tres justifican la elección con las capacidades reales de cada tarea.
+
 ## Pendiente / no hecho todavía
 
+- Botón para borrar la petición actual y empezar una consulta nueva, cerca del campo de entrada de texto. Pedido por el usuario, no implementado todavía.
 - Mejorar la actualización de las recomendaciones de IA para que no dependa de tener un agente con búsqueda web (por ejemplo con una API de búsqueda propia del backend) — limitación conocida y aceptada de v0.5.0, ver arriba.
 
 - Posible mejora del system prompt (detectada revisando la respuesta del caso "bot de trading"): el `final_prompt` no siempre repite con la misma fuerza que `claude_code.documentation_to_create` la instrucción de crear documentación persistente (CLAUDE.md/docs/), y los criterios de verificación no siempre incluyen comprobar que no se han subido credenciales a git pese a que las instrucciones persistentes sí lo piden. Ajuste menor, no bloqueante.

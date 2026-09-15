@@ -1,7 +1,11 @@
 import type {
+  AiToolAlternative,
+  AiToolPick,
+  AiToolRecommendationResult,
   ClaudeCodeSection,
   ContentCategory,
   DeferrableDecision,
+  DetectedTask,
   NecessaryDecision,
   ProfessionalRole,
   Recommendation,
@@ -67,6 +71,59 @@ function isRecommendationArray(value: unknown): value is Recommendation[] {
   );
 }
 
+function isDetectedTaskArray(value: unknown): value is DetectedTask[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (item) =>
+        typeof item === "object" &&
+        item !== null &&
+        typeof (item as DetectedTask).task === "string" &&
+        isStringArray((item as DetectedTask).required_capabilities)
+    )
+  );
+}
+
+function isAiToolPick(value: unknown, validToolIds: Set<string>): value is AiToolPick {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as AiToolPick;
+  return (
+    typeof v.tool_id === "string" &&
+    validToolIds.has(v.tool_id) &&
+    typeof v.purpose === "string" &&
+    typeof v.reason === "string"
+  );
+}
+
+function isAiToolPickArray(value: unknown, validToolIds: Set<string>): value is AiToolPick[] {
+  return Array.isArray(value) && value.every((item) => isAiToolPick(item, validToolIds));
+}
+
+function isAiToolAlternativeArray(value: unknown, validToolIds: Set<string>): value is AiToolAlternative[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (item) =>
+        typeof item === "object" &&
+        item !== null &&
+        typeof (item as AiToolAlternative).tool_id === "string" &&
+        validToolIds.has((item as AiToolAlternative).tool_id) &&
+        typeof (item as AiToolAlternative).difference === "string"
+    )
+  );
+}
+
+function isAiToolRecommendationResult(value: unknown, validToolIds: Set<string>): value is AiToolRecommendationResult {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as AiToolRecommendationResult;
+  return (
+    isDetectedTaskArray(v.task_breakdown) &&
+    isAiToolPick(v.primary, validToolIds) &&
+    isAiToolPickArray(v.complementary, validToolIds) &&
+    isAiToolAlternativeArray(v.alternatives, validToolIds)
+  );
+}
+
 function isProfessionalRole(value: unknown): value is ProfessionalRole {
   if (typeof value !== "object" || value === null) return false;
   const v = value as ProfessionalRole;
@@ -90,7 +147,7 @@ function isClaudeCodeSection(value: unknown): value is ClaudeCodeSection {
 
 export class SchemaValidationError extends Error {}
 
-export function validateStructuredPrompt(value: unknown): StructuredPrompt {
+export function validateStructuredPrompt(value: unknown, validToolIds: Set<string>): StructuredPrompt {
   if (typeof value !== "object" || value === null) {
     throw new SchemaValidationError("La respuesta de la IA no es un objeto JSON.");
   }
@@ -125,6 +182,11 @@ export function validateStructuredPrompt(value: unknown): StructuredPrompt {
   }
   if (!isRecommendationArray(v.recommendations)) {
     throw new SchemaValidationError("El campo 'recommendations' tiene un formato inválido.");
+  }
+  if (v.ai_tool_recommendation !== null && !isAiToolRecommendationResult(v.ai_tool_recommendation, validToolIds)) {
+    throw new SchemaValidationError(
+      "El campo 'ai_tool_recommendation' tiene un formato inválido o referencia un tool_id que no existe en el catálogo."
+    );
   }
   if (!isStringArray(v.verification_criteria)) {
     throw new SchemaValidationError("El campo 'verification_criteria' debe ser un array de strings.");

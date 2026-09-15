@@ -59,7 +59,7 @@ export default function App() {
         <StructuredPromptView
           result={response.result}
           model={response.model}
-          suggestedTool={response.suggestedTool}
+          toolCatalog={response.toolCatalog}
           recommendationsUpdatedAt={response.recommendationsUpdatedAt}
           loading={loading}
           onRegenerate={(answers) => generate(answers)}

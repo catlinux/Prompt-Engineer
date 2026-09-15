@@ -4,6 +4,15 @@ Aquí se explica, en lenguaje sencillo, qué ha cambiado en cada versión de la 
 
 El número de versión tiene tres partes (por ejemplo 0.2.0): la primera cambia cuando hay un cambio muy grande, la segunda cuando se añade algo nuevo o se mejora algo existente, y la tercera cuando se corrige un error pequeño.
 
+## [0.7.0] - 2026-09-15
+
+### Cambiado
+- La recomendación de IA ya no sigue una regla fija ("si es código, siempre Claude"). Ahora la propia IA analiza la petición, identifica las tareas que contiene y decide con criterio qué herramienta (o combinación de herramientas) encaja mejor para cada una, comparando el catálogo real de herramientas disponibles.
+- Puede recomendar una sola herramienta si basta con ella, o una principal más otras complementarias cuando distintas partes del trabajo necesiten cosas distintas (por ejemplo: una para programar, otra para los textos, otra para las imágenes).
+- Distingue entre herramientas "de un solo chat" y herramientas "agente" que trabajan de forma autónoma sobre un proyecto real (por ejemplo, ya no confunde Claude.ai con Claude Code: son entradas distintas en el catálogo con capacidades distintas).
+- Sin favoritismo hacia ningún proveedor: puede recomendar cualquier herramienta del catálogo, incluida DeepSeek, según lo que encaje mejor.
+- Cuando el catálogo no tiene datos suficientes para decir que una herramienta es mejor que otra, la aplicación ya no inventa una diferencia: dice que son alternativas parecidas.
+
 ## [0.6.0] - 2026-09-15
 
 ### Añadido

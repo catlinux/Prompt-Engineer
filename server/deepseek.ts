@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { validateStructuredPrompt, SchemaValidationError } from "./schema.js";
+import { formatCatalogForPrompt, getValidToolIds } from "./aiRecommendations.js";
 import type { StructuredPrompt, QuestionAnswer } from "../src/types.js";
 
 const SYSTEM_PROMPT = `Eres un ingeniero de requisitos e instrucciones experto, no un simple generador de texto. Tu trabajo es analizar una petición en lenguaje natural y convertirla en instrucciones precisas, coherentes y accionables para otra IA. La calidad no depende de la longitud: depende de razonar bien antes de generar.
@@ -28,6 +29,17 @@ PRINCIPIO GENERAL: piensa antes de generar. Pregunta solo cuando sea necesario. 
 7. Sé conciso y concreto en todos los campos. No rellenes campos con generalidades vacías. Si un array no tiene elementos relevantes, devuélvelo vacío ([]).
 8. Escribe todo el contenido en el mismo idioma en que el usuario haya escrito su petición.
 
+9. RECOMENDACIÓN DE HERRAMIENTA DE IA (campo "ai_tool_recommendation"). Esto es distinto de "recommendations" (que trata de CÓMO resolver el proyecto del usuario): aquí decides QUÉ herramienta o herramientas de IA conviene usar para ejecutar el trabajo. Recibirás un catálogo de herramientas disponibles con sus IDs, categorías, si son agénticas (agentes autónomos que ejecutan trabajo real) o no, y sus puntos fuertes.
+   a. Identifica las tareas o subtareas reales que contiene la petición (campo "task_breakdown": lista de {"task", "required_capabilities"} — capacidades como razonamiento, código, escritura, investigación, contexto largo, generación de imagen/vídeo/música, transcripción, trabajo agéntico, etc., las que apliquen).
+   b. Para cada tarea, juzga qué herramienta del catálogo encaja mejor por su naturaleza real — NO es una coincidencia de palabras ni una puntuación: es un juicio sobre qué herramienta sirve para ese trabajo concreto. Distingue claramente herramientas generalistas de herramientas agénticas/especializadas: si la tarea es mantener o construir un proyecto de código real y el catálogo incluye una herramienta agéntica para ello, no la confundas con una herramienta de chat genérica aunque sea del mismo proveedor.
+   c. "primary": la herramienta más importante para el conjunto de la tarea, como {"tool_id", "purpose", "reason"} (tool_id debe ser EXACTAMENTE uno de los IDs del catálogo recibido, nunca inventado).
+   d. "complementary": lista de herramientas adicionales cuando distintas partes del trabajo necesiten capacidades distintas (por ejemplo, una para el desarrollo y otra para las imágenes) — vacía si una sola herramienta basta para todo.
+   e. "alternatives": herramientas comparables a la principal cuando existan, con {"tool_id", "difference"} explicando en qué se diferencian. Si el catálogo no tiene información suficiente para distinguir dos herramientas con confianza, no inventes una diferencia — indica que son alternativas similares o que cualquier herramienta generalista sirve.
+   f. No tengas sesgo hacia ningún proveedor (Anthropic, OpenAI, Google, DeepSeek u otro): elige según capacidades reales, y puedes recomendar DeepSeek si es la mejor opción.
+   g. Para datos actualizables (precios, cuotas, planes, disponibilidad), usa solo lo que dice el catálogo recibido — no inventes cifras que no aparezcan ahí. Tu conocimiento general solo sirve para juzgar puntos fuertes/capacidades, no para inventar datos de precios o límites.
+   h. Esta recomendación es orientativa y NUNCA debe convertirse en un requisito dentro de "final_prompt" ni en ningún otro campo de análisis del proyecto.
+   i. Si la petición no requiere ninguna herramienta de IA en particular o el catálogo no tiene nada aplicable, "ai_tool_recommendation" puede ser null.
+
 Responde EXCLUSIVAMENTE con un objeto JSON válido (sin markdown, sin texto antes o después) con exactamente esta forma:
 
 {
@@ -41,6 +53,12 @@ Responde EXCLUSIVAMENTE con un objeto JSON válido (sin markdown, sin texto ante
   "necessary_decisions": [{ "question": string, "why_necessary": string }],
   "deferrable_decisions": [{ "topic": string, "note": string }],
   "recommendations": [{ "topic": string, "recommendation": string, "reason": string }],
+  "ai_tool_recommendation": null | {
+    "task_breakdown": [{ "task": string, "required_capabilities": string[] }],
+    "primary": { "tool_id": string, "purpose": string, "reason": string },
+    "complementary": [{ "tool_id": string, "purpose": string, "reason": string }],
+    "alternatives": [{ "tool_id": string, "difference": string }]
+  },
   "verification_criteria": string[],
   "expected_result": string,
   "final_prompt": string,
@@ -77,13 +95,16 @@ export function loadDeepSeekConfig(): DeepSeekConfig {
 }
 
 function buildUserMessage(userRequest: string, answers?: QuestionAnswer[]): string {
-  if (!answers || answers.length === 0) return userRequest;
+  let message = userRequest;
 
-  const answersBlock = answers
-    .map((a) => `- ${a.question}\n  Respuesta: ${a.answer}`)
-    .join("\n");
+  if (answers && answers.length > 0) {
+    const answersBlock = answers.map((a) => `- ${a.question}\n  Respuesta: ${a.answer}`).join("\n");
+    message += `\n\nRespuestas del usuario a preguntas anteriores:\n${answersBlock}`;
+  }
 
-  return `${userRequest}\n\nRespuestas del usuario a preguntas anteriores:\n${answersBlock}`;
+  message += `\n\n${formatCatalogForPrompt()}`;
+
+  return message;
 }
 
 class MalformedResponseError extends Error {}
@@ -125,7 +146,7 @@ async function callDeepSeekOnce(
   }
 
   try {
-    return validateStructuredPrompt(parsed);
+    return validateStructuredPrompt(parsed, getValidToolIds());
   } catch (err) {
     if (err instanceof SchemaValidationError) {
       throw new MalformedResponseError(`La respuesta de DeepSeek no cumple el esquema esperado: ${err.message}`);

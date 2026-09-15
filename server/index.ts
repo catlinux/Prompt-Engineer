@@ -1,7 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import { generateStructuredPrompt, loadDeepSeekConfig, DeepSeekError } from "./deepseek.js";
-import { pickRecommendedTool, getRecommendationsUpdatedAt } from "./aiRecommendations.js";
+import { getCatalogAsRecord, getRecommendationsUpdatedAt } from "./aiRecommendations.js";
 import type { GeneratePromptRequest, GeneratePromptResponse, ApiErrorResponse, QuestionAnswer } from "../src/types.js";
 
 const app = express();
@@ -43,7 +43,7 @@ app.post("/api/generate-prompt", async (req, res) => {
     const response: GeneratePromptResponse = {
       result,
       model: config.model,
-      suggestedTool: pickRecommendedTool(result),
+      toolCatalog: getCatalogAsRecord(),
       recommendationsUpdatedAt: getRecommendationsUpdatedAt(),
     };
     res.json(response);

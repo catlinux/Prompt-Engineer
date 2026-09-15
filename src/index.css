@@ -143,6 +143,47 @@ button:disabled {
   font-weight: 600;
 }
 
+.badge--agentic {
+  margin-left: 6px;
+  font-size: 0.7rem;
+  padding: 1px 8px;
+}
+
+.tool-task-breakdown {
+  margin: 0 0 12px;
+  padding-left: 20px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.tool-pick {
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+
+.tool-pick:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.tool-pick__label {
+  margin: 0 0 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+}
+
+.tool-alternatives {
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.tool-alternatives ul {
+  margin: 4px 0 0;
+}
+
 .section {
   background: var(--card-bg);
   border: 1px solid var(--border);

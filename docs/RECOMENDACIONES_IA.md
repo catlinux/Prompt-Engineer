@@ -4,43 +4,35 @@ Esta tabla es la versión legible de [`config/ai_recommendations.json`](../confi
 
 **Última actualización: 2026-09-15.** Cómo se actualiza: ver [ACTUALIZAR_RECOMENDACIONES_IA.md](ACTUALIZAR_RECOMENDACIONES_IA.md).
 
-La aplicación clasifica cada petición en una categoría de contenido y recomienda la herramienta más adecuada de esa categoría.
+## Cómo funciona la recomendación
+
+La aplicación no aplica una regla fija tipo "esta categoría siempre usa esta herramienta". En su lugar, la propia IA analiza la petición, identifica las tareas que contiene, y elige con criterio qué herramienta (o combinación de herramientas) del catálogo encaja mejor — pudiendo recomendar una principal y varias complementarias cuando distintas partes del trabajo necesiten cosas distintas. Es una sugerencia orientativa, nunca una obligación.
 
 ## Herramientas incluidas
 
-| Categoría | Herramienta | ¿Gratis? | Qué incluye gratis | Límites principales |
+| Herramienta | ¿Agente autónomo? | ¿Gratis? | Qué incluye gratis | Límites principales |
 |---|---|---|---|---|
-| Texto general | **Claude.ai** (Anthropic) | Sí | Modelo Sonnet, búsqueda web, Artifacts, subida de archivos | ~30-100 respuestas/día (por tokens, se renueva cada 5h) |
-| Texto general | **ChatGPT** (OpenAI) | Sí | Chats ilimitados; un modelo (el más pequeño de GPT-5.6) | Un solo modo de razonamiento; sin modelos avanzados |
-| Texto general | **Gemini** (Google AI Studio) | Sí | Modelos de la familia Flash | 1500 peticiones/día, 15-30/minuto |
-| Código / software | **Claude.ai** (Anthropic) | Sí | (mismo que arriba) | (mismo que arriba) |
-| Imagen | **Leonardo AI** | Sí | ~150 imágenes/día en ajustes estándar | Calidad/velocidad por debajo de los planes de pago |
-| Vídeo | **Kling AI** | Sí | 2-6 vídeos cortos/día | Marca de agua visible en el plan gratuito |
-| Música | **Suno** | Sí | ~10 canciones/día, modelo v4.5 | No se pueden descargar ni usar comercialmente |
-| Resumen de documentos propios | **NotebookLM** (Google) | Sí | 100 cuadernos, 50 fuentes/cuaderno, 50 preguntas/día, resúmenes de audio/vídeo | Hasta 5 resúmenes de audio al día |
-| Transcripción de audio/voz | **Otter.ai** | Sí | 300 minutos de transcripción al mes | Puede quedarse corto con uso intensivo |
-| Investigación profunda | **NotebookLM** (Google) | Sí | Modo de investigación profunda incluido | Comparte el límite de 50 preguntas/día |
+| **Claude.ai** (Anthropic) | No (chat) | Sí | Modelo Sonnet, búsqueda web, Artifacts, subida de archivos | ~30-100 respuestas/día (por tokens, se renueva cada 5h) |
+| **Claude Code** (Anthropic) | Sí | No | — | Requiere suscripción Claude Pro/Max o crédito de API |
+| **ChatGPT** (OpenAI) | No (chat) | Sí | Chats ilimitados; un modelo (el más pequeño de GPT-5.6) | Un solo modo de razonamiento; sin modelos avanzados |
+| **Gemini** (Google AI Studio) | No (chat/API) | Sí | Modelos de la familia Flash | 1500 peticiones/día, 15-30/minuto |
+| **DeepSeek** (chat/API) | No (chat) | Parcial | Chat web gratuito; API de pago a precio bajo | Chat web con límites en horas punta |
+| **Leonardo AI** | No | Sí | ~150 imágenes/día en ajustes estándar | Calidad/velocidad por debajo de los planes de pago |
+| **Kling AI** | No | Sí | 2-6 vídeos cortos/día | Marca de agua visible en el plan gratuito |
+| **Suno** | No | Sí | ~10 canciones/día, modelo v4.5 | No se pueden descargar ni usar comercialmente |
+| **NotebookLM** (Google) | No | Sí | 100 cuadernos, 50 fuentes/cuaderno, 50 preguntas/día, resúmenes de audio/vídeo | Hasta 5 resúmenes de audio al día |
+| **Otter.ai** | No | Sí | 300 minutos de transcripción al mes | Puede quedarse corto con uso intensivo |
 
-## Por qué se recomienda cada una
+## Por qué Claude.ai y Claude Code están separados
 
-- **Claude.ai** para software: sigue bien instrucciones largas y detalladas — justo lo que produce esta app para Claude Code.
-- **ChatGPT / Gemini** para texto general: buena opción por defecto para conversación, redacción y tareas cotidianas.
-- **Leonardo AI** para imágenes: de las opciones gratuitas, la que da más generaciones al día.
-- **Kling AI** para vídeo: la mayor cuota diaria gratuita entre las opciones comparadas.
-- **Suno** para música: la más generosa en canciones gratis al día entre las opciones comparadas.
-- **NotebookLM** para resúmenes de documentos e investigación profunda: pensado específicamente para trabajar con fuentes propias (PDFs, notas, documentos), no solo para conversar.
-- **Otter.ai** para transcripción: buen equilibrio entre minutos gratis y facilidad de uso, sin necesitar configuración técnica.
+Son herramientas distintas con capacidades distintas, aunque sean del mismo proveedor: Claude.ai es un chat (piensa y escribe, pero no ejecuta nada por sí mismo), mientras que Claude Code es un agente que lee, escribe y ejecuta código de verdad sobre un proyecto, verificando sus propios cambios. La aplicación distingue esto explícitamente (campo `is_agentic`) para no recomendar un chat cuando lo que hace falta es un agente que mantenga un proyecto real, ni al revés.
 
 ## Notas importantes
 
 - Estos datos se recopilan mediante búsqueda web puntual, no en tiempo real. Pueden quedar desactualizados — la propia aplicación avisa en pantalla cuando pasan más de 7 días desde la última actualización.
-- La recomendación es una guía orientativa, no una regla estricta: cualquier IA puede usarse con el prompt que genera esta aplicación.
-- Los límites de las versiones gratuitas cambian con frecuencia. Antes de decidir basándote solo en esta tabla para algo importante, conviene comprobarlo en la web oficial de cada herramienta.
-
-## Cómo se decide la categoría
-
-Cuando generas un prompt, la propia IA (DeepSeek) clasifica la petición según qué tipo de resultado final se pide — no según el tema. Por ejemplo, "hazme un resumen de estos tres artículos que te adjunto" es `resumen_documentos`, mientras que "explícame qué es la fotosíntesis" es `texto_general`, aunque ambas sean "resúmenes" en sentido amplio.
+- Los precios, cuotas y límites que muestra la aplicación vienen siempre de este catálogo, nunca los inventa la IA — si el catálogo no tiene un dato, no se muestra.
+- Cuando el catálogo no tiene información suficiente para decir que una herramienta es claramente mejor que otra para una tarea, la aplicación lo indica como alternativas similares en vez de inventar una diferencia.
 
 ## Cómo añadir más herramientas o categorías
 
-Sencillo — basta con seguir el procedimiento en [ACTUALIZAR_RECOMENDACIONES_IA.md](ACTUALIZAR_RECOMENDACIONES_IA.md) y pedirlo explícitamente. Añadir una categoría nueva requiere también actualizar la lista de categorías en `src/types.ts` (`ContentCategory`) y el prompt del sistema en `server/deepseek.ts`.
+Sencillo — basta con añadir una entrada nueva a `config/ai_recommendations.json` (id, nombre, categorías, si es agéntica, puntos fuertes, datos de plan gratuito y precio) y pedir que se actualice esta tabla. No hace falta tocar la lógica de selección: DeepSeek recibe el catálogo completo automáticamente en cada petición y decide con lo que haya disponible. Ver [ACTUALIZAR_RECOMENDACIONES_IA.md](ACTUALIZAR_RECOMENDACIONES_IA.md) para el procedimiento completo.

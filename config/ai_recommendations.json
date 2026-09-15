@@ -3,84 +3,114 @@
   "source_note": "Datos recopilados manualmente mediante búsqueda web puntual. No se actualizan solos: alguien con un agente con acceso a búsqueda web (como Claude Code) debe refrescarlos siguiendo docs/ACTUALIZAR_RECOMENDACIONES_IA.md.",
   "tools": [
     {
-      "id": "claude",
+      "id": "claude_ai",
       "name": "Claude.ai (Anthropic)",
       "categories": ["texto_general", "codigo_software"],
+      "is_agentic": false,
+      "strengths": ["razonamiento complejo", "escritura técnica y precisa", "seguir instrucciones largas y detalladas", "explicar y diseñar código sin ejecutarlo"],
       "has_free_tier": true,
       "free_tier_summary": "Unas 30-100 respuestas al día según uso (cupo por tokens, no por mensajes, y se renueva de forma continua cada 5 horas). Incluye el modelo Sonnet, búsqueda web, Artifacts y subida de archivos.",
       "free_tier_limitations": "No incluye Opus, Claude Code ni el modo de investigación en la versión gratuita.",
-      "best_for": ["software", "razonamiento complejo", "escritura técnica", "prompts largos y estructurados"],
-      "recommended_when": "La tarea es de programación, arquitectura de software, o requiere seguir instrucciones largas y precisas (como los prompts para Claude Code que genera esta app)."
+      "price_note": "Plan Pro de pago con más uso y modelos; sin coste por token en la interfaz de chat."
+    },
+    {
+      "id": "claude_code",
+      "name": "Claude Code (Anthropic)",
+      "categories": ["codigo_software"],
+      "is_agentic": true,
+      "strengths": ["agente autónomo que lee, escribe y ejecuta código en un proyecto real", "mantener y evolucionar un proyecto de software completo", "trabajar de forma incremental con verificación propia"],
+      "has_free_tier": false,
+      "free_tier_summary": "No tiene versión gratuita independiente: se usa con una suscripción Claude (Pro/Max) o con crédito de la API de Anthropic.",
+      "free_tier_limitations": "Requiere pago (suscripción o crédito de API); no es una herramienta de un solo chat, sino un agente que corre en tu terminal/editor.",
+      "price_note": "De pago: incluido en algunos planes Claude Pro/Max con límites de uso, o facturado por uso de API."
     },
     {
       "id": "chatgpt",
       "name": "ChatGPT (OpenAI)",
       "categories": ["texto_general"],
+      "is_agentic": false,
+      "strengths": ["conversación de uso general", "redacción", "brainstorming", "tareas cotidianas"],
       "has_free_tier": true,
       "free_tier_summary": "Chats de texto ilimitados desde agosto de 2026. Limitado a un único modelo (el más pequeño de la familia GPT-5.6) y a un solo modo de razonamiento.",
       "free_tier_limitations": "Sin acceso a los modelos más potentes de OpenAI ni a límites ampliados de generación de imágenes/archivos.",
-      "best_for": ["uso general", "redacción", "tareas cotidianas", "brainstorming"],
-      "recommended_when": "La tarea es de uso general, redacción o consulta rápida sin necesidad del razonamiento más potente disponible."
+      "price_note": "Plan Plus/Pro de pago con modelos más potentes y más límite de uso."
     },
     {
       "id": "gemini",
       "name": "Gemini (Google AI Studio / API)",
       "categories": ["texto_general"],
+      "is_agentic": false,
+      "strengths": ["volumen alto de peticiones pequeñas", "integraciones vía API gratuita", "contexto largo"],
       "has_free_tier": true,
       "free_tier_summary": "Nivel gratuito sin tarjeta de crédito con los modelos de la familia Flash (no los Pro, que pasaron a ser de pago). Límite de 1500 peticiones/día y hasta 15-30 peticiones por minuto según el modelo.",
       "free_tier_limitations": "Los modelos Pro (más potentes) ya no están disponibles gratis. Google puede usar las conversaciones del nivel gratuito para mejorar sus productos.",
-      "best_for": ["volumen alto de peticiones pequeñas", "integraciones vía API gratuita"],
-      "recommended_when": "Se necesita hacer muchas llamadas pequeñas y automatizadas, y no hace falta el modelo más potente."
+      "price_note": "Modelos Pro y mayor cuota disponibles de pago vía Google Cloud."
+    },
+    {
+      "id": "deepseek",
+      "name": "DeepSeek (chat / API)",
+      "categories": ["texto_general", "codigo_software"],
+      "is_agentic": false,
+      "strengths": ["razonamiento a bajo coste", "código y matemáticas", "buena relación calidad-precio en API"],
+      "has_free_tier": true,
+      "free_tier_summary": "Chat web gratuito con uso general. La API no tiene nivel gratuito permanente, pero el coste por token es muy bajo comparado con otros proveedores.",
+      "free_tier_limitations": "El chat web gratuito puede tener límites de uso en horas punta; para uso vía API hay que pagar por token (precio bajo).",
+      "price_note": "Chat web gratuito; API de pago con precios bajos por token."
     },
     {
       "id": "leonardo",
       "name": "Leonardo AI",
       "categories": ["imagen"],
+      "is_agentic": false,
+      "strengths": ["generación de imágenes", "ilustraciones", "conceptos visuales"],
       "has_free_tier": true,
       "free_tier_summary": "150 créditos gratis al día, aproximadamente 150 imágenes en ajustes estándar.",
       "free_tier_limitations": "Calidad y velocidad por debajo de los planes de pago; algunos modelos y funciones avanzadas quedan fuera del plan gratuito.",
-      "best_for": ["generación de imágenes", "ilustraciones", "conceptos visuales"],
-      "recommended_when": "La petición pide crear una imagen, ilustración o concepto visual desde una descripción de texto."
+      "price_note": "Planes de pago con más créditos, modelos y resolución."
     },
     {
       "id": "kling",
       "name": "Kling AI",
       "categories": ["video"],
+      "is_agentic": false,
+      "strengths": ["generación de vídeo corto", "animación de imágenes"],
       "has_free_tier": true,
       "free_tier_summary": "66 créditos gratis al día, aproximadamente 2-6 vídeos cortos según duración y calidad.",
       "free_tier_limitations": "Los vídeos del plan gratuito llevan marca de agua visible.",
-      "best_for": ["generación de vídeo corto", "animación de imágenes"],
-      "recommended_when": "La petición pide generar un vídeo corto a partir de texto o de una imagen."
+      "price_note": "Planes de pago sin marca de agua y con más resolución/duración."
     },
     {
       "id": "suno",
       "name": "Suno",
       "categories": ["musica"],
+      "is_agentic": false,
+      "strengths": ["composición musical", "canciones a partir de letra o descripción"],
       "has_free_tier": true,
       "free_tier_summary": "50 créditos gratis al día, aproximadamente 10 canciones completas, con acceso al modelo v4.5.",
       "free_tier_limitations": "Las canciones del plan gratuito no se pueden descargar ni usar comercialmente.",
-      "best_for": ["composición musical", "canciones a partir de letra o descripción"],
-      "recommended_when": "La petición pide componer una canción o pieza musical a partir de una descripción o letra."
+      "price_note": "Planes de pago para descarga y uso comercial."
     },
     {
       "id": "notebooklm",
       "name": "NotebookLM (Google)",
       "categories": ["resumen_documentos", "investigacion_profunda"],
+      "is_agentic": false,
+      "strengths": ["resumir documentos propios", "sintetizar varias fuentes", "investigación a partir de material propio", "resúmenes en audio/vídeo"],
       "has_free_tier": true,
       "free_tier_summary": "Gratis sin límite de tiempo: hasta 100 cuadernos, 50 fuentes por cuaderno y 50 preguntas al día. Incluye resúmenes en audio y vídeo (hasta 5 audios al día) y modo de investigación profunda.",
       "free_tier_limitations": "El límite diario de preguntas y de resúmenes de audio puede quedarse corto si se analizan muchos documentos el mismo día.",
-      "best_for": ["resumir documentos propios", "sintetizar varias fuentes", "investigación a partir de material propio"],
-      "recommended_when": "La petición pide resumir, analizar o sacar conclusiones de documentos, PDFs o fuentes que el usuario ya tiene."
+      "price_note": "Sin coste; los límites más altos vienen incluidos con planes Google One AI si se contratan."
     },
     {
       "id": "otter",
       "name": "Otter.ai",
       "categories": ["transcripcion_audio"],
+      "is_agentic": false,
+      "strengths": ["transcribir reuniones", "notas de voz", "conversaciones grabadas"],
       "has_free_tier": true,
       "free_tier_summary": "300 minutos de transcripción gratis al mes, pensado para reuniones, notas de voz y conversaciones grabadas.",
       "free_tier_limitations": "300 minutos/mes puede quedarse corto para uso intensivo; funciones avanzadas de resumen y búsqueda limitadas en el plan gratuito.",
-      "best_for": ["transcribir reuniones", "notas de voz", "conversaciones grabadas"],
-      "recommended_when": "La petición pide transcribir audio, una reunión o una nota de voz a texto."
+      "price_note": "Planes de pago con más minutos y funciones de resumen avanzadas."
     }
   ]
 }

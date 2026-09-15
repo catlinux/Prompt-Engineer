@@ -49,3 +49,13 @@ Limitación aceptada conscientemente: quien use el proyecto sin un agente con b�
 La primera versión de la recomendación de IA (v0.5.0) solo distinguía software (→ Claude) de todo lo demás (→ ChatGPT), desaprovechando que la IA cubre muchos más tipos de tarea: imagen, vídeo, música, resúmenes de documentos propios, transcripción, investigación profunda. El usuario lo señaló explícitamente pidiendo aprovechar mejor el potencial de la herramienta.
 
 Se añadió `content_category` al modelo de datos, clasificado por DeepSeek en la misma llamada (sin coste extra), y se amplió `config/ai_recommendations.json` con herramientas especializadas por categoría (Leonardo AI, Kling AI, Suno, NotebookLM, Otter.ai), investigadas con búsqueda web real, no inventadas. La selección en el backend sigue siendo determinista y sin IA (`server/aiRecommendations.ts`), solo que ahora busca por categoría en vez de por una regla binaria.
+
+## Recomendación de IA por juicio de DeepSeek, no por regla determinista (v0.7.0)
+
+La selección por categoría de v0.6.0 seguía siendo una regla fija (una categoría → una herramienta), incapaz de recomendar varias herramientas para una petición con subtareas distintas (ej. una tienda online que necesita código, textos e imágenes a la vez), y no distinguía entre una herramienta de chat y un agente autónomo del mismo proveedor.
+
+Se decidió que la propia IA (DeepSeek) hiciera este juicio, recibiendo el catálogo completo como contexto en la misma llamada que ya hace el resto del análisis — sin añadir una segunda llamada ni coste extra. Se eliminó la función determinista `pickRecommendedTool()`. Para evitar que la IA invente datos de precios/cuotas (que cambian con frecuencia y deben venir del catálogo curado, no de su conocimiento general), DeepSeek solo devuelve `tool_id`s de referencia; el backend valida que esos IDs existan en el catálogo real (rechaza la respuesta si no) y el frontend resuelve los datos completos (precio, límites) a partir del catálogo, nunca de lo que escriba la IA directamente.
+
+Se separó `claude_ai` de `claude_code` como entradas distintas del catálogo (con un campo `is_agentic`) y se añadió `deepseek` al catálogo, para que el sistema pueda recomendarse a sí mismo cuando corresponda y no tenga sesgo estructural hacia ningún proveedor.
+
+La recomendación de herramienta de IA (`ai_tool_recommendation`) se mantiene como campo separado de `recommendations` (que trata de cómo resolver el proyecto del usuario, no de qué herramienta ejecutar el trabajo) — nunca se mezclan ni una se convierte en requisito de la otra.

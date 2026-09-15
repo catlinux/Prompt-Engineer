@@ -1,4 +1,4 @@
-import type { AiToolRecommendation, QuestionAnswer, StructuredPrompt } from "../types";
+import type { AiToolCatalogEntry, QuestionAnswer, StructuredPrompt } from "../types";
 import { CopyButton } from "./CopyButton";
 import { OpenQuestionsForm } from "./OpenQuestionsForm";
 import { SuggestedToolCard } from "./SuggestedToolCard";
@@ -6,7 +6,7 @@ import { SuggestedToolCard } from "./SuggestedToolCard";
 interface StructuredPromptViewProps {
   result: StructuredPrompt;
   model: string;
-  suggestedTool: AiToolRecommendation | null;
+  toolCatalog: Record<string, AiToolCatalogEntry>;
   recommendationsUpdatedAt: string | null;
   loading: boolean;
   onRegenerate: (answers: QuestionAnswer[]) => void;
@@ -29,7 +29,7 @@ function ListSection({ title, items }: { title: string; items: string[] }) {
 export function StructuredPromptView({
   result,
   model,
-  suggestedTool,
+  toolCatalog,
   recommendationsUpdatedAt,
   loading,
   onRegenerate,
@@ -41,7 +41,13 @@ export function StructuredPromptView({
         {result.is_software_request && <span className="badge">Petición de software · incluye sección Claude Code</span>}
       </div>
 
-      {suggestedTool && <SuggestedToolCard tool={suggestedTool} updatedAt={recommendationsUpdatedAt} />}
+      {result.ai_tool_recommendation && (
+        <SuggestedToolCard
+          recommendation={result.ai_tool_recommendation}
+          catalog={toolCatalog}
+          updatedAt={recommendationsUpdatedAt}
+        />
+      )}
 
       {result.role && (
         <section className="section role-section">

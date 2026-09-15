@@ -46,6 +46,29 @@ export type ContentCategory =
   | "transcripcion_audio"
   | "investigacion_profunda";
 
+export interface DetectedTask {
+  task: string;
+  required_capabilities: string[];
+}
+
+export interface AiToolPick {
+  tool_id: string;
+  purpose: string;
+  reason: string;
+}
+
+export interface AiToolAlternative {
+  tool_id: string;
+  difference: string;
+}
+
+export interface AiToolRecommendationResult {
+  task_breakdown: DetectedTask[];
+  primary: AiToolPick;
+  complementary: AiToolPick[];
+  alternatives: AiToolAlternative[];
+}
+
 export interface StructuredPrompt {
   is_software_request: boolean;
   content_category: ContentCategory;
@@ -57,6 +80,7 @@ export interface StructuredPrompt {
   necessary_decisions: NecessaryDecision[];
   deferrable_decisions: DeferrableDecision[];
   recommendations: Recommendation[];
+  ai_tool_recommendation: AiToolRecommendationResult | null;
   verification_criteria: string[];
   expected_result: string;
   final_prompt: string;
@@ -73,26 +97,27 @@ export interface GeneratePromptRequest {
   answers?: QuestionAnswer[];
 }
 
-export interface AiToolRecommendation {
+export interface AiToolCatalogEntry {
   id: string;
   name: string;
   categories: ContentCategory[];
+  is_agentic: boolean;
+  strengths: string[];
   has_free_tier: boolean;
   free_tier_summary: string;
   free_tier_limitations: string;
-  best_for: string[];
-  recommended_when: string;
+  price_note: string;
 }
 
 export interface AiRecommendationsData {
   updated_at: string;
-  tools: AiToolRecommendation[];
+  tools: AiToolCatalogEntry[];
 }
 
 export interface GeneratePromptResponse {
   result: StructuredPrompt;
   model: string;
-  suggestedTool: AiToolRecommendation | null;
+  toolCatalog: Record<string, AiToolCatalogEntry>;
   recommendationsUpdatedAt: string | null;
 }
 
