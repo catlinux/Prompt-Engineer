@@ -4,6 +4,11 @@ Aquí se explica, en lenguaje sencillo, qué ha cambiado en cada versión de la 
 
 El número de versión tiene tres partes (por ejemplo 0.2.0): la primera cambia cuando hay un cambio muy grande, la segunda cuando se añade algo nuevo o se mejora algo existente, y la tercera cuando se corrige un error pequeño.
 
+## [0.9.1] - 2026-09-15
+
+### Corregido
+- Volvía a aparecer el error "La respuesta de DeepSeek no es JSON válido". Con las últimas funciones añadidas (sobre todo el CLAUDE.md/TODO.md para Claude Code), las respuestas se habían vuelto más largas que el límite configurado, y se cortaban a medias otra vez. Se ha aumentado ese límite. Verificado con varias peticiones reales del caso que genera más contenido: sin errores.
+
 ## [0.9.0] - 2026-09-15
 
 ### Añadido

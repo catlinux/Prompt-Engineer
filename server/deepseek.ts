@@ -146,7 +146,7 @@ async function callDeepSeekOnce(
       ],
       response_format: { type: "json_object" },
       temperature: 0.3,
-      max_tokens: 8192,
+      max_tokens: 16384,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

@@ -130,6 +130,12 @@ El usuario señaló que recomendar Claude Code no debería quedarse solo en el p
 
 **Verificado con llamada real** (gestor de tareas personales en Python): `claude_code_workspace` se generó con contenido específico del proyecto real (esquema SQLite, CLI como hipótesis, recordatorios) en ambos archivos, no genérico. Verificado también que con una petición cuya herramienta principal no es Claude Code (canal de YouTube → `claude_ai`), el campo es `null` correctamente.
 
+## v0.9.1 — Corrección: volvió a aparecer "La respuesta de DeepSeek no es JSON válido"
+
+Tras publicar v0.9.0, el `max_tokens: 8192` fijado en la corrección de v0.4.1 se quedó corto otra vez: los campos añadidos desde entonces (`important_pending_decisions`, `ai_tool_recommendation` con el catálogo completo, y sobre todo `claude_code_workspace` con el contenido íntegro de CLAUDE.md y TODO.md) hacen que la respuesta JSON sea mucho más grande, y volvía a cortarse a medias (`finish_reason: length`).
+
+Se subió `max_tokens` a 16384 en `server/deepseek.ts` (el modelo `deepseek-flash` admite hasta 384K de salida, sigue habiendo margen de sobra). Verificado con 7 llamadas reales usando la petición que genera el JSON más grande (software con `claude_code_workspace`): 7/7 respuestas válidas con el workspace generado correctamente. Un intento adicional dio un corte de conexión (`HTTP 000`, sin respuesta del servidor) que no está relacionado con este error — no llegó a haber respuesta de DeepSeek que parsear.
+
 ## Pendiente / no hecho todavía
 
 - Entrega del entorno de trabajo de Claude Code solo por copiar/pegar archivo a archivo — no genera un .zip descargable ni escribe directamente al disco (la app no tiene acceso al sistema de archivos del usuario). Aceptado conscientemente para esta versión; podría mejorarse más adelante si aporta valor suficiente.
