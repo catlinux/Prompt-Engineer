@@ -147,19 +147,69 @@ function isProfessionalRole(value: unknown): value is ProfessionalRole {
   return typeof v.role === "string" && v.role.trim() !== "" && isStringArray(v.behaviors) && v.behaviors.length > 0;
 }
 
-function isClaudeCodeSection(value: unknown): value is ClaudeCodeSection {
+function isClaudeCodeSection(value: unknown, validDecisionTopics: Set<string>): value is ClaudeCodeSection {
   if (typeof value !== "object" || value === null) return false;
   const v = value as ClaudeCodeSection;
-  return (
-    typeof v.what_to_build === "string" &&
-    typeof v.how_to_analyze_project === "string" &&
-    isStringArray(v.decisions_to_make) &&
-    isStringArray(v.decisions_to_consult) &&
-    isStringArray(v.documentation_to_create) &&
-    isStringArray(v.persistent_instructions) &&
-    typeof v.how_to_verify === "string" &&
-    typeof v.how_to_update_documentation === "string"
-  );
+  if (
+    typeof v.what_to_build !== "string" ||
+    typeof v.how_to_analyze_project !== "string" ||
+    !isStringArray(v.decision_references) ||
+    !isStringArray(v.documentation_to_create) ||
+    !isStringArray(v.persistent_instructions) ||
+    typeof v.how_to_verify !== "string" ||
+    typeof v.how_to_update_documentation !== "string"
+  ) {
+    return false;
+  }
+  return v.decision_references.every((topic) => validDecisionTopics.has(topic));
+}
+
+/**
+ * Recoge todos los "question"/"topic" de las cuatro categorías de decisiones
+ * (necessary, important-pending, recommendations, deferrable) para poder
+ * comprobar que: (a) cada decisión vive en una sola categoría (nunca
+ * duplicada entre ellas) y (b) "claude_code.decision_references" solo
+ * apunta a temas que existen de verdad, evitando que la sección de Claude
+ * Code reclasifique o repita una decisión con una instrucción distinta.
+ */
+function collectDecisionTopics(v: Record<string, unknown>): Set<string> {
+  const topics = new Set<string>();
+  for (const item of (v.necessary_decisions as NecessaryDecision[] | undefined) ?? []) {
+    topics.add(item.question);
+  }
+  for (const item of (v.important_pending_decisions as ImportantPendingDecision[] | undefined) ?? []) {
+    topics.add(item.topic);
+  }
+  for (const item of (v.recommendations as Recommendation[] | undefined) ?? []) {
+    topics.add(item.topic);
+  }
+  for (const item of (v.deferrable_decisions as DeferrableDecision[] | undefined) ?? []) {
+    topics.add(item.topic);
+  }
+  return topics;
+}
+
+function findDuplicateDecisionTopic(v: Record<string, unknown>): string | null {
+  const seen = new Map<string, string>();
+  const groups: [string, string[]][] = [
+    ["necessary_decisions", ((v.necessary_decisions as NecessaryDecision[] | undefined) ?? []).map((d) => d.question)],
+    [
+      "important_pending_decisions",
+      ((v.important_pending_decisions as ImportantPendingDecision[] | undefined) ?? []).map((d) => d.topic),
+    ],
+    ["recommendations", ((v.recommendations as Recommendation[] | undefined) ?? []).map((d) => d.topic)],
+    ["deferrable_decisions", ((v.deferrable_decisions as DeferrableDecision[] | undefined) ?? []).map((d) => d.topic)],
+  ];
+  for (const [groupName, items] of groups) {
+    for (const topic of items) {
+      const existingGroup = seen.get(topic);
+      if (existingGroup && existingGroup !== groupName) {
+        return `"${topic}" aparece a la vez en "${existingGroup}" y en "${groupName}"`;
+      }
+      seen.set(topic, groupName);
+    }
+  }
+  return null;
 }
 
 function isClaudeCodeWorkspace(value: unknown): value is ClaudeCodeWorkspace {
@@ -218,6 +268,12 @@ export function validateStructuredPrompt(value: unknown, validToolIds: Set<strin
   if (!isRecommendationArray(v.recommendations)) {
     throw new SchemaValidationError("El campo 'recommendations' tiene un formato inválido.");
   }
+  const duplicateTopic = findDuplicateDecisionTopic(v);
+  if (duplicateTopic) {
+    throw new SchemaValidationError(
+      `Una misma decisión aparece clasificada en categorías incompatibles: ${duplicateTopic}. Cada decisión debe vivir en una sola categoría (bloqueante, importante-pendiente, recomendación o aplazable).`
+    );
+  }
   if (v.ai_tool_recommendation !== null && !isAiToolRecommendationResult(v.ai_tool_recommendation, validToolIds)) {
     throw new SchemaValidationError(
       "El campo 'ai_tool_recommendation' tiene un formato inválido o referencia un tool_id que no existe en el catálogo."
@@ -232,8 +288,10 @@ export function validateStructuredPrompt(value: unknown, validToolIds: Set<strin
   if (typeof v.final_prompt !== "string" || v.final_prompt.trim() === "") {
     throw new SchemaValidationError("Falta el campo 'final_prompt' (string no vacío).");
   }
-  if (v.claude_code !== null && !isClaudeCodeSection(v.claude_code)) {
-    throw new SchemaValidationError("El campo 'claude_code' tiene un formato inválido.");
+  if (v.claude_code !== null && !isClaudeCodeSection(v.claude_code, collectDecisionTopics(v))) {
+    throw new SchemaValidationError(
+      "El campo 'claude_code' tiene un formato inválido o 'decision_references' apunta a un tema que no existe en ninguna categoría de decisiones."
+    );
   }
   if (v.is_software_request === true && v.claude_code === null) {
     throw new SchemaValidationError("'claude_code' no puede ser null cuando 'is_software_request' es true.");

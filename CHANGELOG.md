@@ -4,6 +4,12 @@ Aquí se explica, en lenguaje sencillo, qué ha cambiado en cada versión de la 
 
 El número de versión tiene tres partes (por ejemplo 0.2.0): la primera cambia cuando hay un cambio muy grande, la segunda cuando se añade algo nuevo o se mejora algo existente, y la tercera cuando se corrige un error pequeño.
 
+## [0.10.0] - 2026-09-15
+
+### Corregido
+- A veces una misma decisión pendiente podía aparecer contada dos veces de forma contradictoria: por ejemplo, como algo que Claude Code puede decidir por su cuenta y, a la vez, como algo que debe consultarte obligatoriamente antes de continuar. Ahora cada decisión vive en un solo sitio y con un solo criterio, así que esa contradicción ya no puede pasar — si una decisión necesitará tu confirmación más adelante (por ejemplo, antes de poner algo en producción), la aplicación lo explica como parte de esa misma decisión, en vez de duplicarla.
+- La aplicación ahora comprueba esto automáticamente antes de mostrarte el resultado: si detectara una contradicción de este tipo, rechaza esa respuesta y genera una nueva en vez de mostrarte algo inconsistente.
+
 ## [0.9.1] - 2026-09-15
 
 ### Corregido

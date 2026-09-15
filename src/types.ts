@@ -35,8 +35,7 @@ export interface Recommendation {
 export interface ClaudeCodeSection {
   what_to_build: string;
   how_to_analyze_project: string;
-  decisions_to_make: string[];
-  decisions_to_consult: string[];
+  decision_references: string[];
   documentation_to_create: string[];
   persistent_instructions: string[];
   how_to_verify: string;

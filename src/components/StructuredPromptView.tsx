@@ -135,8 +135,19 @@ export function StructuredPromptView({
           <p>
             <strong>Cómo debe analizar el proyecto:</strong> {result.claude_code.how_to_analyze_project}
           </p>
-          <ListSection title="Decisiones que puede tomar" items={result.claude_code.decisions_to_make} />
-          <ListSection title="Decisiones que debe consultar" items={result.claude_code.decisions_to_consult} />
+          {result.claude_code.decision_references.length > 0 && (
+            <div className="section">
+              <h4>Decisiones relevantes para esta tarea</h4>
+              <p className="open-questions-form__hint">
+                Ver el detalle y la fase de cada una más arriba, en sus secciones correspondientes.
+              </p>
+              <ul>
+                {result.claude_code.decision_references.map((topic, i) => (
+                  <li key={i}>{topic}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           <ListSection title="Documentación a crear" items={result.claude_code.documentation_to_create} />
           <ListSection title="Instrucciones persistentes a mantener" items={result.claude_code.persistent_instructions} />
           <p>

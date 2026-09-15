@@ -136,6 +136,22 @@ Tras publicar v0.9.0, el `max_tokens: 8192` fijado en la corrección de v0.4.1 s
 
 Se subió `max_tokens` a 16384 en `server/deepseek.ts` (el modelo `deepseek-flash` admite hasta 384K de salida, sigue habiendo margen de sobra). Verificado con 7 llamadas reales usando la petición que genera el JSON más grande (software con `claude_code_workspace`): 7/7 respuestas válidas con el workspace generado correctamente. Un intento adicional dio un corte de conexión (`HTTP 000`, sin respuesta del servidor) que no está relacionado con este error — no llegó a haber respuesta de DeepSeek que parsear.
 
+## v0.10.0 — Coherencia interna: una decisión no puede vivir en dos categorías contradictorias
+
+El usuario detectó (con un caso real de mods para AzerothCore) que una misma decisión podía aparecer a la vez en `claude_code` como algo "que el agente puede decidir" y como algo "que debe consultar obligatoriamente" — instrucciones contradictorias para el agente final. La causa raíz: `ClaudeCodeSection` tenía `decisions_to_make`/`decisions_to_consult` como listas de texto libre **redundantes** con el modelo de fases ya existente (`necessary_decisions`/`important_pending_decisions`/`recommendations`/`deferrable_decisions`), generadas por separado sin ninguna referencia cruzada — el modelo podía (y a veces lo hacía) escribir el mismo tema en dos sitios con tratamiento distinto.
+
+**Solución elegida (la más pequeña posible, sin arquitectura nueva):** eliminar la redundancia en vez de añadir una capa de detección de contradicciones sobre texto libre (más frágil e imprecisa). `ClaudeCodeSection.decisions_to_make`/`decisions_to_consult` se sustituyeron por un único campo `decision_references: string[]` — solo puede contener los `question`/`topic` **exactos, copiados literalmente**, de decisiones que ya existen en `necessary_decisions`/`important_pending_decisions`/`recommendations`. Nunca redacta un texto nuevo ni reclasifica: solo apunta. Con esto, la contradicción es estructuralmente imposible — no hay dos fuentes de verdad sobre la misma decisión, solo una.
+
+**Dos capas de verificación añadidas en `server/schema.ts`:**
+1. `findDuplicateDecisionTopic()`: recorre `necessary_decisions`, `important_pending_decisions`, `recommendations` y `deferrable_decisions` y rechaza la respuesta si el mismo `question`/`topic` aparece en más de una de esas categorías.
+2. `isClaudeCodeSection()` ahora exige que cada entrada de `decision_references` coincida literalmente con un tema ya existente en alguna de esas categorías (usa `collectDecisionTopics()`) — si referencia algo que no existe, se rechaza.
+
+Si el validador detecta cualquiera de las dos incoherencias, la respuesta se rechaza como si fuera JSON malformado, lo que dispara el reintento automático ya existente (de v0.4.1) — el usuario nunca ve un resultado contradictorio, sencillamente se genera de nuevo.
+
+**System prompt** (`server/deepseek.ts`): nueva regla explícita de coherencia (regla 2, "UNA DECISIÓN, UNA SOLA CATEGORÍA") pidiendo revisar antes de responder que ningún tema aparezca en dos categorías con tratamiento distinto, y que una decisión que necesitará confirmación en una fase posterior (ej. antes de producción) se exprese como parte de la misma decisión importante-no-bloqueante (usando `what_could_change`/`provisional_approach`), nunca duplicada como bloqueante.
+
+**Verificado con el caso real que dio el usuario** (mod de torneo con jefes gemelos en AzerothCore, con la petición explícita de buscar documentación): "Zona exacta del mapa y ubicación del evento" aparece una sola vez, clasificada en `important_pending_decisions` con hipótesis provisional y `what_could_change` claro; `claude_code.decision_references` solo apunta a ese mismo texto, sin redactarlo de nuevo ni contradecirlo. Verificado programáticamente sobre 3 llamadas reales: 0 duplicados entre categorías, 0 referencias inválidas en `decision_references`. Verificado sin regresión: petición no-software sigue con `claude_code: null`; `ai_tool_recommendation` y `claude_code_workspace` siguen funcionando exactamente igual que antes (no se tocó esa lógica, tal como pidió el usuario).
+
 ## Pendiente / no hecho todavía
 
 - Entrega del entorno de trabajo de Claude Code solo por copiar/pegar archivo a archivo — no genera un .zip descargable ni escribe directamente al disco (la app no tiene acceso al sistema de archivos del usuario). Aceptado conscientemente para esta versión; podría mejorarse más adelante si aporta valor suficiente.
@@ -144,7 +160,7 @@ Se subió `max_tokens` a 16384 en `server/deepseek.ts` (el modelo `deepseek-flas
 - Mejorar la actualización de las recomendaciones de IA para que no dependa de tener un agente con búsqueda web (por ejemplo con una API de búsqueda propia del backend) — limitación conocida y aceptada de v0.5.0, ver arriba.
 
 - Posible mejora del system prompt (detectada revisando la respuesta del caso "bot de trading"): el `final_prompt` no siempre repite con la misma fuerza que `claude_code.documentation_to_create` la instrucción de crear documentación persistente (CLAUDE.md/docs/), y los criterios de verificación no siempre incluyen comprobar que no se han subido credenciales a git pese a que las instrucciones persistentes sí lo piden. Ajuste menor, no bloqueante.
-- Sin tests automatizados
+- Tests automatizados muy limitados: solo cubren la validación de coherencia de `server/schema.ts` (`npm test`, 6 tests). El resto del proyecto (frontend, integración con DeepSeek) sigue verificándose solo a mano.
 - Sin persistencia/historial de peticiones (deliberadamente fuera de v1, ver DECISIONS.md)
 - Sin gestión de rate-limiting ni de peticiones concurrentes en el backend
 
