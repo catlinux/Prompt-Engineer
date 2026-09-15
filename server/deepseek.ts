@@ -7,7 +7,23 @@ import type {
   ClaudeCodeWorkspace,
   TriageResult,
   ThreadHistoryEntry,
+  TokenUsage,
 } from "../src/types.js";
+
+interface WithUsage<T> {
+  data: T;
+  usage: TokenUsage | null;
+}
+
+function extractUsage(completion: OpenAI.Chat.ChatCompletion): TokenUsage | null {
+  const usage = completion.usage;
+  if (!usage) return null;
+  return {
+    prompt_tokens: usage.prompt_tokens,
+    completion_tokens: usage.completion_tokens,
+    total_tokens: usage.total_tokens,
+  };
+}
 
 const TRIAGE_SYSTEM_PROMPT = `Eres un clasificador rápido. Tu único trabajo es decidir, a partir de una petición en lenguaje natural, dos cosas: si es una petición de software, y si merece la pena ofrecer explícitamente Claude Code (agente de código autónomo) ANTES de hacer ningún análisis completo — para no gastar tiempo/tokens analizando a fondo un proyecto si el usuario prefiere otra herramienta.
 
@@ -197,7 +213,7 @@ async function callDeepSeekOnce(
   client: OpenAI,
   config: DeepSeekConfig,
   messages: OpenAI.Chat.ChatCompletionMessageParam[]
-): Promise<StructuredPrompt> {
+): Promise<WithUsage<StructuredPrompt>> {
   let completion;
   try {
     completion = await client.chat.completions.create({
@@ -227,7 +243,8 @@ async function callDeepSeekOnce(
   }
 
   try {
-    return validateStructuredPrompt(parsed, getValidToolIds());
+    const data = validateStructuredPrompt(parsed, getValidToolIds());
+    return { data, usage: extractUsage(completion) };
   } catch (err) {
     if (err instanceof SchemaValidationError) {
       throw new MalformedResponseError(`La respuesta de DeepSeek no cumple el esquema esperado: ${err.message}`);
@@ -265,14 +282,18 @@ export async function generateStructuredPrompt(
   answers?: QuestionAnswer[],
   excludeClaudeCode?: boolean,
   threadHistory?: ThreadHistoryEntry[]
-): Promise<StructuredPrompt> {
+): Promise<WithUsage<StructuredPrompt>> {
   const client = new OpenAI({ apiKey: config.apiKey, baseURL: config.baseURL });
   const userMessage = buildUserMessage(userRequest, answers, excludeClaudeCode);
   const messages = buildThreadMessages(threadHistory, userMessage);
   return withSingleRetry(() => callDeepSeekOnce(client, config, messages));
 }
 
-async function callTriageOnce(client: OpenAI, config: DeepSeekConfig, userRequest: string): Promise<TriageResult> {
+async function callTriageOnce(
+  client: OpenAI,
+  config: DeepSeekConfig,
+  userRequest: string
+): Promise<WithUsage<TriageResult>> {
   let completion;
   try {
     completion = await client.chat.completions.create({
@@ -308,10 +329,10 @@ async function callTriageOnce(client: OpenAI, config: DeepSeekConfig, userReques
     throw new MalformedResponseError("La respuesta de DeepSeek no cumple el esquema esperado para el triaje.");
   }
 
-  return parsed;
+  return { data: parsed, usage: extractUsage(completion) };
 }
 
-export async function triageRequest(config: DeepSeekConfig, userRequest: string): Promise<TriageResult> {
+export async function triageRequest(config: DeepSeekConfig, userRequest: string): Promise<WithUsage<TriageResult>> {
   const client = new OpenAI({ apiKey: config.apiKey, baseURL: config.baseURL });
   return withSingleRetry(() => callTriageOnce(client, config, userRequest));
 }
@@ -377,4 +398,36 @@ export async function generateClaudeCodeWorkspace(
   const client = new OpenAI({ apiKey: config.apiKey, baseURL: config.baseURL });
   const analysisJson = JSON.stringify(analysis);
   return withSingleRetry(() => callWorkspaceOnce(client, config, analysisJson));
+}
+
+interface DeepSeekBalanceInfo {
+  currency: string;
+  total_balance: string;
+  granted_balance: string;
+  topped_up_balance: string;
+}
+
+interface DeepSeekBalanceApiResponse {
+  is_available: boolean;
+  balance_infos: DeepSeekBalanceInfo[];
+}
+
+export async function getBalance(config: DeepSeekConfig): Promise<DeepSeekBalanceApiResponse> {
+  let res: Response;
+  try {
+    res = await fetch(`${config.baseURL}/user/balance`, {
+      headers: { Authorization: `Bearer ${config.apiKey}` },
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new DeepSeekError(`Error consultando el saldo de DeepSeek: ${message}`);
+  }
+  if (!res.ok) {
+    throw new DeepSeekError(`Error consultando el saldo de DeepSeek (HTTP ${res.status}).`);
+  }
+  try {
+    return (await res.json()) as DeepSeekBalanceApiResponse;
+  } catch {
+    throw new DeepSeekError("La respuesta del saldo de DeepSeek no es JSON válido.");
+  }
 }

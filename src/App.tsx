@@ -4,10 +4,12 @@ import { StructuredPromptView } from "./components/StructuredPromptView";
 import { ClaudeCodeTriagePrompt } from "./components/ClaudeCodeTriagePrompt";
 import { Sidebar } from "./components/Sidebar";
 import { SaveConversationPrompt } from "./components/SaveConversationPrompt";
+import { UsagePanel } from "./components/UsagePanel";
 import {
   APP_VERSION,
   APP_VERSION_DATE,
   type ApiErrorResponse,
+  type BalanceResponse,
   type ConversationDetail,
   type ConversationSummary,
   type CreateConversationResponse,
@@ -15,6 +17,7 @@ import {
   type QuestionAnswer,
   type StructuredPrompt,
   type ThreadHistoryEntry,
+  type TokenUsage,
   type TriageResponse,
   type TriageResult,
 } from "./types";
@@ -43,8 +46,17 @@ export default function App() {
 
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
 
+  const [balance, setBalance] = useState<number | null>(null);
+  const [balanceCurrency, setBalanceCurrency] = useState<string | null>(null);
+  const [balanceLoading, setBalanceLoading] = useState(false);
+  const [balanceError, setBalanceError] = useState<string | null>(null);
+  const [lastUsage, setLastUsage] = useState<TokenUsage | null>(null);
+  const [lastCostUsd, setLastCostUsd] = useState<number | null>(null);
+  const [balanceBeforeRequest, setBalanceBeforeRequest] = useState<number | null>(null);
+
   useEffect(() => {
     void refreshConversations();
+    void fetchBalance();
   }, []);
 
   async function refreshConversations() {
@@ -55,6 +67,32 @@ export default function App() {
       setConversations(body.conversations);
     } catch {
       // El historial es una comodidad secundaria: si falla, no bloquea el uso normal de la app.
+    }
+  }
+
+  async function fetchBalance(): Promise<number | null> {
+    setBalanceLoading(true);
+    try {
+      const res = await fetch("/api/balance");
+      if (!res.ok) {
+        const body = (await res.json()) as ApiErrorResponse;
+        throw new Error(body.error || "No se pudo consultar el saldo.");
+      }
+      const body = (await res.json()) as BalanceResponse;
+      setBalanceError(null);
+      const primary = body.balances[0] ?? null;
+      if (primary) {
+        setBalance(primary.total_balance);
+        setBalanceCurrency(primary.currency);
+        return primary.total_balance;
+      }
+      setBalance(null);
+      return null;
+    } catch (err) {
+      setBalanceError(err instanceof Error ? err.message : "Error desconocido consultando el saldo.");
+      return null;
+    } finally {
+      setBalanceLoading(false);
     }
   }
 
@@ -89,6 +127,7 @@ export default function App() {
           model: "",
           toolCatalog: {},
           recommendationsUpdatedAt: null,
+          usage: null,
         },
       }));
       setThread(loadedThread);
@@ -172,6 +211,11 @@ export default function App() {
       setThread((prev) => [...prev, { userRequest: requestText, triage: usedTriage, response: body }]);
       setTriage(null);
       setUserRequest("");
+      setLastUsage(body.usage);
+      const balanceAfter = await fetchBalance();
+      if (balanceBeforeRequest !== null && balanceAfter !== null) {
+        setLastCostUsd(Math.max(0, balanceBeforeRequest - balanceAfter));
+      }
       await persistMessageInSavedConversation(requestText, usedTriage, body.result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error desconocido.");
@@ -184,6 +228,8 @@ export default function App() {
     if (userRequest.trim().length === 0 || loading) return;
     setError(null);
     setLoading(true);
+    const balanceNow = await fetchBalance();
+    setBalanceBeforeRequest(balanceNow);
     try {
       const res = await fetch("/api/triage", {
         method: "POST",
@@ -258,10 +304,20 @@ export default function App() {
 
       <div className="app-main">
         <div className="app-header">
-          <h1>Prompt Engineer</h1>
-          <span className="app-version">
-            v{APP_VERSION} · {APP_VERSION_DATE}
-          </span>
+          <div className="app-header__title">
+            <h1>Prompt Engineer</h1>
+            <span className="app-version">
+              v{APP_VERSION} · {APP_VERSION_DATE}
+            </span>
+          </div>
+          <UsagePanel
+            loading={balanceLoading}
+            error={balanceError}
+            currentBalance={balance}
+            currency={balanceCurrency}
+            lastCostUsd={lastCostUsd}
+            lastUsage={lastUsage}
+          />
         </div>
         <p className="subtitle">
           Escribe tu petición en lenguaje natural y genera un prompt profesional y estructurado.

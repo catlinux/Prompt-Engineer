@@ -140,6 +140,7 @@ export interface TriageRequest {
 
 export interface TriageResponse {
   triage: TriageResult;
+  usage: TokenUsage | null;
 }
 
 export interface AiToolCatalogEntry {
@@ -164,6 +165,7 @@ export interface GeneratePromptResponse {
   model: string;
   toolCatalog: Record<string, AiToolCatalogEntry>;
   recommendationsUpdatedAt: string | null;
+  usage: TokenUsage | null;
 }
 
 export interface GenerateWorkspaceRequest {
@@ -219,4 +221,20 @@ export interface AppendMessageResponse {
 
 export interface RenameConversationRequest {
   title: string;
+}
+
+export interface TokenUsage {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+}
+
+export interface BalanceInfo {
+  currency: string;
+  total_balance: number;
+}
+
+export interface BalanceResponse {
+  isAvailable: boolean;
+  balances: BalanceInfo[];
 }

@@ -4,6 +4,14 @@ Aquí se explica, en lenguaje sencillo, qué ha cambiado en cada versión de la 
 
 El número de versión tiene tres partes (por ejemplo 0.2.0): la primera cambia cuando hay un cambio muy grande, la segunda cuando se añade algo nuevo o se mejora algo existente, y la tercera cuando se corrige un error pequeño.
 
+## [0.16.0] - 2026-09-16
+
+### Añadido
+- Panel en la cabecera con el saldo disponible en DeepSeek y el consumo (tokens y coste estimado) de la última consulta realizada.
+
+### Técnico
+- El coste se calcula comparando el saldo real justo antes y justo después de cada consulta (no con una tabla de precios), porque DeepSeek no publica un precio único por token: varía según el modelo, la hora y si hay caché. El saldo que da la API solo tiene 2 decimales, así que una consulta muy barata puede mostrarse como "< 0.01" en vez de una cifra exacta.
+
 ## [0.15.0] - 2026-09-15
 
 ### Añadido

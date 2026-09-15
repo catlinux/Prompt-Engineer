@@ -272,6 +272,24 @@ El usuario pidió una barra lateral de historial tipo chat: título por conversa
 
 Verificado: `npm run typecheck` y `npm run build` sin errores.
 
+## v0.16.0 — Contador de saldo y consumo de la última consulta
+
+Se pidió mostrar el saldo disponible en DeepSeek y el consumo de la última consulta. Inspección previa confirmó que la clave ya vivía solo en el backend (sin cambios necesarios ahí) y que la respuesta de la API ya incluye `usage` (tokens) sin leerlo.
+
+**Backend:**
+- `getBalance()` en `server/deepseek.ts`: llama a `GET https://api.deepseek.com/user/balance` con la clave del backend.
+- Nuevo endpoint `GET /api/balance`.
+- `generateStructuredPrompt()` y `triageRequest()` ahora devuelven `{data, usage}` en vez de solo los datos — `usage` sale de `completion.usage`, ya presente en cada respuesta de la API, sin llamada adicional.
+- `GeneratePromptResponse`/`TriageResponse` llevan un campo `usage` nuevo.
+
+**Frontend:**
+- `UsagePanel.tsx`: panel compacto en la cabecera junto al título — saldo actual (USD) y, si hay una consulta reciente, sus tokens totales y el coste estimado.
+- `App.tsx`: consulta el saldo al pulsar para generar (antes de `/api/triage`) y de nuevo al recibir el resultado de `/api/generate-prompt` — el coste mostrado es la diferencia real entre ambos saldos, no un cálculo con tabla de precios (ver justificación en [DECISIONS.md](DECISIONS.md)). Estados de carga y error del saldo gestionados sin bloquear el resto de la app si `/api/balance` falla.
+
+**Verificado con llamadas reales** contra una instancia de depuración aislada (puerto 3098): `GET /api/balance` devuelve el saldo real en USD; `POST /api/triage` y `POST /api/generate-prompt` devuelven `usage` con cifras reales de tokens (ej. 727 y 9280 tokens en dos pruebas); el saldo bajó de 2.98 a 2.96 USD entre pruebas de sesiones distintas, confirmando que refleja consumo real. Se detectó y documentó una limitación real (no un bug): el saldo solo tiene 2 decimales de precisión en origen, así que una sola consulta barata puede no mover la cifra — el panel lo muestra como "< 0.01" en vez de "0.00" para no aparentar que fue gratis.
+
+Verificado: `npm run typecheck` y `npm run build` sin errores.
+
 ## Pendiente / no hecho todavía
 
 - **La lentitud sigue sin resolverse del todo:** el cuello de botella real no es solo el volumen de tokens de salida, sino el tiempo de razonamiento del modelo. Pendiente de decidir con el usuario: medir `deepseek-v4-pro` (ya configurado en `.env`, pendiente de que el usuario reinicie `npm run dev` para probarlo) frente a `deepseek-flash`; considerar si el streaming de la respuesta (pintar el texto según llega, en vez de esperar el JSON completo) merece la pena dado que la respuesta es un único objeto JSON que no se puede parsear hasta estar completo.

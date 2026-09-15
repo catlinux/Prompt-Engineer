@@ -4,6 +4,7 @@ import {
   generateStructuredPrompt,
   generateClaudeCodeWorkspace,
   triageRequest,
+  getBalance,
   loadDeepSeekConfig,
   DeepSeekError,
 } from "./deepseek.js";
@@ -30,6 +31,7 @@ import type {
   AppendMessageRequest,
   AppendMessageResponse,
   RenameConversationRequest,
+  BalanceResponse,
 } from "../src/types.js";
 
 const app = express();
@@ -66,8 +68,8 @@ app.post("/api/triage", async (req, res) => {
 
   try {
     const config = loadDeepSeekConfig();
-    const triage = await triageRequest(config, userRequest.trim());
-    const response: TriageResponse = { triage };
+    const { data: triage, usage } = await triageRequest(config, userRequest.trim());
+    const response: TriageResponse = { triage, usage };
     res.json(response);
   } catch (err) {
     if (err instanceof DeepSeekError) {
@@ -101,12 +103,19 @@ app.post("/api/generate-prompt", async (req, res) => {
 
   try {
     const config = loadDeepSeekConfig();
-    const result = await generateStructuredPrompt(config, userRequest.trim(), answers, excludeClaudeCode, threadHistory);
+    const { data: result, usage } = await generateStructuredPrompt(
+      config,
+      userRequest.trim(),
+      answers,
+      excludeClaudeCode,
+      threadHistory
+    );
     const response: GeneratePromptResponse = {
       result,
       model: config.model,
       toolCatalog: getCatalogAsRecord(),
       recommendationsUpdatedAt: getRecommendationsUpdatedAt(),
+      usage,
     };
     res.json(response);
   } catch (err) {
@@ -149,6 +158,30 @@ app.post("/api/generate-workspace", async (req, res) => {
       return;
     }
     console.error("Error inesperado en /api/generate-workspace:", err);
+    const error: ApiErrorResponse = { error: "Error interno del servidor." };
+    res.status(500).json(error);
+  }
+});
+
+app.get("/api/balance", async (_req, res) => {
+  try {
+    const config = loadDeepSeekConfig();
+    const balance = await getBalance(config);
+    const response: BalanceResponse = {
+      isAvailable: balance.is_available,
+      balances: balance.balance_infos.map((b) => ({
+        currency: b.currency,
+        total_balance: Number(b.total_balance),
+      })),
+    };
+    res.json(response);
+  } catch (err) {
+    if (err instanceof DeepSeekError) {
+      const error: ApiErrorResponse = { error: err.message };
+      res.status(502).json(error);
+      return;
+    }
+    console.error("Error inesperado en /api/balance:", err);
     const error: ApiErrorResponse = { error: "Error interno del servidor." };
     res.status(500).json(error);
   }

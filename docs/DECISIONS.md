@@ -143,3 +143,17 @@ El usuario pidió una barra lateral de historial (como en las webs de chat habit
 **Vista del hilo:** se pidió que, al continuar una conversación, se vea el histórico completo apilado (como un chat), no solo el último resultado — `App.tsx` mantiene el hilo activo como una lista de mensajes en memoria y los renderiza todos en orden, reutilizando `StructuredPromptView` por cada uno.
 
 No se tocó el modelo de análisis en sí (categorías de decisión, `ai_tool_recommendation`, triaje de v0.14.0) — el historial es una capa de persistencia y contexto alrededor de llamadas que ya existían, no un cambio en cómo se analiza cada petición individual.
+
+## Saldo y coste por diferencia de saldo, no por tabla de precios (v0.16.0)
+
+Se pidió un contador de saldo disponible y consumo de la última consulta. Antes de implementar nada se verificó dónde vive la clave de DeepSeek: ya estaba (desde v0.1.0) exclusivamente en el backend, nunca expuesta al frontend — el requisito de "si la clave está expuesta, añade una capa segura" ya estaba cumplido sin cambios.
+
+**Cómo calcular el coste de la última consulta — la parte con más matices:** DeepSeek no expone el precio por token en la API. Se consultó la documentación oficial (api-docs.deepseek.com/quick_start/pricing): los precios varían por modelo (`deepseek-flash` vs `deepseek-v4-pro`), por franja horaria (pico/valle, mitad de precio fuera de pico) y por si el input tiene cache hit o miss — seis cifras distintas por modelo. Mantener esa tabla a mano (como `config/ai_recommendations.json`) habría añadido mantenimiento y riesgo de mostrar un coste incorrecto si se desactualiza o si se simplifica a un único precio "aproximado".
+
+Se optó, con el usuario, por un método sin tabla de precios: consultar el saldo real (`GET /user/balance`) justo antes de lanzar la petición y otra vez justo después de recibir el resultado; la diferencia es el coste real exacto en USD, sin ninguna suposición. Limitación aceptada conscientemente: la API solo da el saldo con 2 decimales, así que una consulta barata (unos pocos milicentavos) puede no reflejarse en la diferencia — se mostró `< 0.01` en vez de `0.00` para no dar la falsa impresión de que la consulta fue gratis.
+
+**Tokens de la última consulta:** cada llamada a la API con el SDK `openai` ya devuelve `usage` (`prompt_tokens`, `completion_tokens`, `total_tokens`) en cada respuesta — no se necesitó ninguna llamada adicional para esto, solo capturar un campo que ya llegaba y no se leía. Se propagó a través de `generateStructuredPrompt()`/`triageRequest()` (que ahora devuelven `{data, usage}` en vez de solo los datos) sin tocar `withSingleRetry()` (sigue siendo genérico).
+
+**Dónde y cuándo se consulta el saldo:** se preguntó explícitamente al usuario. Se consulta al pulsar para generar (antes de `/api/triage`) y de nuevo al recibir el resultado final (después de `/api/generate-prompt`) — no en cada llamada intermedia ni con refresco periódico en segundo plano, para no multiplicar peticiones a la API de DeepSeek solo para refrescar un número.
+
+No se tocó el flujo de generación de CLAUDE.md/TODO.md (`/api/generate-workspace`) — no se pidió mostrar su coste y añadirlo habría sido una funcionalidad no solicitada.

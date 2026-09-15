@@ -95,6 +95,14 @@ body {
 
 .app-header {
   display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.app-header__title {
+  display: flex;
   align-items: baseline;
   gap: 12px;
   flex-wrap: wrap;
@@ -744,6 +752,50 @@ button:focus-visible {
   border: 1px solid var(--border);
 }
 
+/* --- Panel de saldo y consumo --- */
+
+.usage-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  min-width: 160px;
+}
+
+.usage-panel__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  white-space: nowrap;
+}
+
+.usage-panel__label {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.68rem;
+}
+
+.usage-panel__value {
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+
+.usage-panel__value--muted {
+  color: var(--muted);
+}
+
+.usage-panel__value--error {
+  color: var(--danger);
+  cursor: help;
+}
+
 @media (max-width: 720px) {
   .app-layout {
     flex-direction: column;
@@ -754,5 +806,9 @@ button:focus-visible {
     border-right: none;
     border-bottom: 1px solid var(--border);
     max-height: 240px;
+  }
+
+  .usage-panel {
+    width: 100%;
   }
 }
