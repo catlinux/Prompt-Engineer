@@ -1,7 +1,23 @@
 import OpenAI from "openai";
-import { validateStructuredPrompt, SchemaValidationError } from "./schema.js";
+import { validateStructuredPrompt, isTriageResult, SchemaValidationError } from "./schema.js";
 import { formatCatalogForPrompt, getValidToolIds } from "./aiRecommendations.js";
-import type { StructuredPrompt, QuestionAnswer, ClaudeCodeWorkspace } from "../src/types.js";
+import type { StructuredPrompt, QuestionAnswer, ClaudeCodeWorkspace, TriageResult } from "../src/types.js";
+
+const TRIAGE_SYSTEM_PROMPT = `Eres un clasificador rápido. Tu único trabajo es decidir, a partir de una petición en lenguaje natural, dos cosas: si es una petición de software, y si merece la pena ofrecer explícitamente Claude Code (agente de código autónomo) ANTES de hacer ningún análisis completo — para no gastar tiempo/tokens analizando a fondo un proyecto si el usuario prefiere otra herramienta.
+
+Recomienda Claude Code (campo "claude_code_recommended": true) solo cuando la petición sea, de verdad, un proyecto de software con envergadura real: varios archivos o componentes, alguna arquitectura no trivial, integración entre partes, o mantenimiento continuado de código existente — no lo actives para un script trivial de una sola función ni para peticiones que no son de programación. Ante la duda razonable, actívalo: es mejor preguntar una vez de más que analizar a fondo sin preguntar.
+
+Responde EXCLUSIVAMENTE con un objeto JSON válido (sin markdown, sin texto antes o después) con exactamente esta forma:
+
+{
+  "is_software_request": boolean,
+  "content_category": "texto_general" | "codigo_software" | "imagen" | "video" | "musica" | "resumen_documentos" | "transcripcion_audio" | "investigacion_profunda",
+  "claude_code_recommended": boolean,
+  "offer_message": string | null,
+  "suggested_folder_name": string | null
+}
+
+"offer_message" y "suggested_folder_name" van rellenos SOLO cuando "claude_code_recommended" es true (si no, ambos null). "offer_message": una frase corta y natural preguntando si se quiere preparar el entorno de trabajo para Claude Code, explicando brevemente por qué encaja (adaptada a la petición concreta, no genérica siempre igual). "suggested_folder_name": nombre de carpeta corto en minúsculas con guiones. Escribe en el mismo idioma en que el usuario haya escrito su petición.`;
 
 const SYSTEM_PROMPT = `Eres un ingeniero de requisitos e instrucciones experto, no un simple generador de texto. Tu trabajo es analizar una petición en lenguaje natural y convertirla en instrucciones precisas, coherentes y accionables para otra IA. La calidad no depende de la longitud: depende de razonar bien antes de generar.
 
@@ -136,12 +152,17 @@ export function loadDeepSeekConfig(): DeepSeekConfig {
   return { apiKey, model, baseURL };
 }
 
-function buildUserMessage(userRequest: string, answers?: QuestionAnswer[]): string {
+function buildUserMessage(userRequest: string, answers?: QuestionAnswer[], excludeClaudeCode?: boolean): string {
   let message = userRequest;
 
   if (answers && answers.length > 0) {
     const answersBlock = answers.map((a) => `- ${a.question}\n  Respuesta: ${a.answer}`).join("\n");
     message += `\n\nRespuestas del usuario a preguntas anteriores:\n${answersBlock}`;
+  }
+
+  if (excludeClaudeCode) {
+    message +=
+      "\n\nEl usuario ya ha rechazado explícitamente usar Claude Code para esta petición. No lo recomiendes como herramienta principal ni complementaria en 'ai_tool_recommendation' — elige la mejor alternativa real del catálogo. 'claude_code_workspace' debe ser null.";
   }
 
   message += `\n\n${formatCatalogForPrompt()}`;
@@ -223,11 +244,56 @@ async function withSingleRetry<T>(attempt: () => Promise<T>): Promise<T> {
 export async function generateStructuredPrompt(
   config: DeepSeekConfig,
   userRequest: string,
-  answers?: QuestionAnswer[]
+  answers?: QuestionAnswer[],
+  excludeClaudeCode?: boolean
 ): Promise<StructuredPrompt> {
   const client = new OpenAI({ apiKey: config.apiKey, baseURL: config.baseURL });
-  const userMessage = buildUserMessage(userRequest, answers);
+  const userMessage = buildUserMessage(userRequest, answers, excludeClaudeCode);
   return withSingleRetry(() => callDeepSeekOnce(client, config, userMessage));
+}
+
+async function callTriageOnce(client: OpenAI, config: DeepSeekConfig, userRequest: string): Promise<TriageResult> {
+  let completion;
+  try {
+    completion = await client.chat.completions.create({
+      model: config.model,
+      messages: [
+        { role: "system", content: TRIAGE_SYSTEM_PROMPT },
+        { role: "user", content: userRequest },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.2,
+      max_tokens: 1024,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new DeepSeekError(`Error llamando a la API de DeepSeek: ${message}`);
+  }
+
+  const raw = completion.choices[0]?.message?.content;
+  if (!raw) {
+    throw new MalformedResponseError("La respuesta de DeepSeek no contiene contenido.");
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new MalformedResponseError(
+      `La respuesta de DeepSeek no es JSON válido (finish_reason: ${completion.choices[0]?.finish_reason ?? "desconocido"}).`
+    );
+  }
+
+  if (!isTriageResult(parsed)) {
+    throw new MalformedResponseError("La respuesta de DeepSeek no cumple el esquema esperado para el triaje.");
+  }
+
+  return parsed;
+}
+
+export async function triageRequest(config: DeepSeekConfig, userRequest: string): Promise<TriageResult> {
+  const client = new OpenAI({ apiKey: config.apiKey, baseURL: config.baseURL });
+  return withSingleRetry(() => callTriageOnce(client, config, userRequest));
 }
 
 function isClaudeCodeWorkspaceContent(value: unknown): value is ClaudeCodeWorkspace {

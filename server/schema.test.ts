@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { validateStructuredPrompt, SchemaValidationError } from "./schema.js";
+import { validateStructuredPrompt, isTriageResult, SchemaValidationError } from "./schema.js";
 
 const VALID_TOOL_IDS = new Set(["claude_code", "claude_ai"]);
 
@@ -277,4 +277,50 @@ test("rechaza claude_code_workspace presente cuando la herramienta principal no 
     },
   });
   assert.throws(() => validateStructuredPrompt(input, VALID_TOOL_IDS), SchemaValidationError);
+});
+
+// --- Triaje previo (isTriageResult) ---
+
+test("acepta un triaje válido sin Claude Code recomendado", () => {
+  const input = {
+    is_software_request: false,
+    content_category: "texto_general",
+    claude_code_recommended: false,
+    offer_message: null,
+    suggested_folder_name: null,
+  };
+  assert.equal(isTriageResult(input), true);
+});
+
+test("acepta un triaje válido con Claude Code recomendado", () => {
+  const input = {
+    is_software_request: true,
+    content_category: "codigo_software",
+    claude_code_recommended: true,
+    offer_message: "¿Preparamos Claude Code para este proyecto?",
+    suggested_folder_name: "mi-proyecto",
+  };
+  assert.equal(isTriageResult(input), true);
+});
+
+test("rechaza un triaje con claude_code_recommended true pero sin offer_message", () => {
+  const input = {
+    is_software_request: true,
+    content_category: "codigo_software",
+    claude_code_recommended: true,
+    offer_message: null,
+    suggested_folder_name: "mi-proyecto",
+  };
+  assert.equal(isTriageResult(input), false);
+});
+
+test("rechaza un triaje con claude_code_recommended false pero con offer_message relleno", () => {
+  const input = {
+    is_software_request: false,
+    content_category: "texto_general",
+    claude_code_recommended: false,
+    offer_message: "Esto no debería estar aquí.",
+    suggested_folder_name: null,
+  };
+  assert.equal(isTriageResult(input), false);
 });

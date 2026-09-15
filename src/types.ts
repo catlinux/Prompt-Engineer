@@ -117,6 +117,23 @@ export interface QuestionAnswer {
 export interface GeneratePromptRequest {
   userRequest: string;
   answers?: QuestionAnswer[];
+  excludeClaudeCode?: boolean;
+}
+
+export interface TriageResult {
+  is_software_request: boolean;
+  content_category: ContentCategory;
+  claude_code_recommended: boolean;
+  offer_message: string | null;
+  suggested_folder_name: string | null;
+}
+
+export interface TriageRequest {
+  userRequest: string;
+}
+
+export interface TriageResponse {
+  triage: TriageResult;
 }
 
 export interface AiToolCatalogEntry {

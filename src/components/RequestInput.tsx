@@ -38,8 +38,8 @@ export function RequestInput({ value, onChange, onSubmit, loading }: RequestInpu
       </div>
       {loading && (
         <p className="request-input__loading-hint">
-          Puede tardar hasta 1-2 minutos: la IA analiza la petición, detecta decisiones pendientes y prepara el
-          prompt completo en una sola pasada.
+          Analizando la petición… si es un proyecto de software con Claude Code como opción clara, te lo
+          preguntaremos antes de generar el análisis completo (que puede tardar 1-2 minutos).
         </p>
       )}
     </div>

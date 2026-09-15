@@ -13,6 +13,7 @@ import type {
   ProfessionalRole,
   Recommendation,
   StructuredPrompt,
+  TriageResult,
 } from "../src/types.js";
 
 const DECIDED_BY_VALUES: DecidedBy[] = ["user", "agent", "agent_after_investigation"];
@@ -224,6 +225,21 @@ function isClaudeCodeWorkspaceOfferInfo(value: unknown): value is ClaudeCodeWork
     typeof v.suggested_folder_name === "string" &&
     v.suggested_folder_name.trim() !== ""
   );
+}
+
+export function isTriageResult(value: unknown): value is TriageResult {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as TriageResult;
+  if (typeof v.is_software_request !== "boolean") return false;
+  if (!isContentCategory(v.content_category)) return false;
+  if (typeof v.claude_code_recommended !== "boolean") return false;
+  if (v.claude_code_recommended) {
+    if (typeof v.offer_message !== "string" || v.offer_message.trim() === "") return false;
+    if (typeof v.suggested_folder_name !== "string" || v.suggested_folder_name.trim() === "") return false;
+  } else {
+    if (v.offer_message !== null || v.suggested_folder_name !== null) return false;
+  }
+  return true;
 }
 
 export class SchemaValidationError extends Error {}

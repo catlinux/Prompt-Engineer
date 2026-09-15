@@ -4,6 +4,12 @@ Aquí se explica, en lenguaje sencillo, qué ha cambiado en cada versión de la 
 
 El número de versión tiene tres partes (por ejemplo 0.2.0): la primera cambia cuando hay un cambio muy grande, la segunda cuando se añade algo nuevo o se mejora algo existente, y la tercera cuando se corrige un error pequeño.
 
+## [0.14.0] - 2026-09-15
+
+### Cambiado
+- Cuando la petición parece un proyecto de software con envergadura real, la aplicación ahora pregunta primero si quieres usar Claude Code, **antes** de generar todo el análisis y el prompt — así no se gasta tiempo ni consumo en preparar un resultado completo que igual no querías. Si dices que no, se genera el prompt con la segunda mejor IA directamente, sin volver a ofrecerte Claude Code.
+- Este primer paso ("triaje") es una llamada corta y rápida, separada de la llamada de análisis completo que ya existía.
+
 ## [0.13.0] - 2026-09-15
 
 ### Añadido

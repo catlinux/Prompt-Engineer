@@ -1,12 +1,20 @@
 import "dotenv/config";
 import express from "express";
-import { generateStructuredPrompt, generateClaudeCodeWorkspace, loadDeepSeekConfig, DeepSeekError } from "./deepseek.js";
+import {
+  generateStructuredPrompt,
+  generateClaudeCodeWorkspace,
+  triageRequest,
+  loadDeepSeekConfig,
+  DeepSeekError,
+} from "./deepseek.js";
 import { getCatalogAsRecord, getRecommendationsUpdatedAt } from "./aiRecommendations.js";
 import type {
   GeneratePromptRequest,
   GeneratePromptResponse,
   GenerateWorkspaceRequest,
   GenerateWorkspaceResponse,
+  TriageRequest,
+  TriageResponse,
   ApiErrorResponse,
   QuestionAnswer,
 } from "../src/types.js";
@@ -28,10 +36,9 @@ function parseAnswers(raw: unknown): QuestionAnswer[] | undefined {
   return answers.length > 0 ? answers : undefined;
 }
 
-app.post("/api/generate-prompt", async (req, res) => {
-  const body = req.body as Partial<GeneratePromptRequest>;
+app.post("/api/triage", async (req, res) => {
+  const body = req.body as Partial<TriageRequest>;
   const userRequest = body.userRequest;
-  const answers = parseAnswers(body.answers);
 
   if (typeof userRequest !== "string" || userRequest.trim().length === 0) {
     const error: ApiErrorResponse = { error: "Debes escribir una petición antes de generar el prompt." };
@@ -46,7 +53,41 @@ app.post("/api/generate-prompt", async (req, res) => {
 
   try {
     const config = loadDeepSeekConfig();
-    const result = await generateStructuredPrompt(config, userRequest.trim(), answers);
+    const triage = await triageRequest(config, userRequest.trim());
+    const response: TriageResponse = { triage };
+    res.json(response);
+  } catch (err) {
+    if (err instanceof DeepSeekError) {
+      const error: ApiErrorResponse = { error: err.message };
+      res.status(502).json(error);
+      return;
+    }
+    console.error("Error inesperado en /api/triage:", err);
+    const error: ApiErrorResponse = { error: "Error interno del servidor." };
+    res.status(500).json(error);
+  }
+});
+
+app.post("/api/generate-prompt", async (req, res) => {
+  const body = req.body as Partial<GeneratePromptRequest>;
+  const userRequest = body.userRequest;
+  const answers = parseAnswers(body.answers);
+  const excludeClaudeCode = body.excludeClaudeCode === true;
+
+  if (typeof userRequest !== "string" || userRequest.trim().length === 0) {
+    const error: ApiErrorResponse = { error: "Debes escribir una petición antes de generar el prompt." };
+    res.status(400).json(error);
+    return;
+  }
+  if (userRequest.length > 4000) {
+    const error: ApiErrorResponse = { error: "La petición es demasiado larga (máximo 4000 caracteres)." };
+    res.status(400).json(error);
+    return;
+  }
+
+  try {
+    const config = loadDeepSeekConfig();
+    const result = await generateStructuredPrompt(config, userRequest.trim(), answers, excludeClaudeCode);
     const response: GeneratePromptResponse = {
       result,
       model: config.model,

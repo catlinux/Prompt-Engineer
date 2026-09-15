@@ -228,6 +228,24 @@ System prompt (`server/deepseek.ts`): nuevas reglas 2b (cómo elegir `decided_by
 
 Verificado: `npm run typecheck`, `npm test` (18/18) y `npm run build` sin errores.
 
+## v0.14.0 — Triaje previo: preguntar por Claude Code antes de generar el análisis completo
+
+El usuario pidió reducir el consumo innecesario: cuando la herramienta recomendada acababa siendo Claude Code, la aplicación ya había generado y pagado todo el análisis completo (decisiones, recomendaciones, `final_prompt`) antes de preguntar si el usuario lo quería. Se añadió una llamada de triaje previa, corta y barata (`POST /api/triage`, `max_tokens: 1024`), que solo detecta si es software, su categoría, y si Claude Code merece preguntarse antes de analizar a fondo (`claude_code_recommended`).
+
+**Flujo resultante:**
+- Triaje descarta Claude Code (no-software o proyecto pequeño) → llamada completa de análisis directamente, sin pregunta previa (igual que antes).
+- Triaje recomienda Claude Code → se muestra la pregunta ANTES de generar nada más. "Sí" → llamada completa normal. "No" → llamada completa con instrucción explícita de excluir Claude Code (`excludeClaudeCode: true` en `POST /api/generate-prompt`), que nunca lo propone como principal ni complementaria.
+
+**Decisión de diseño:** siempre se hacen las mismas dos llamadas (triaje + la que corresponda), incluso en peticiones claramente no-software — se descartó añadir una heurística local previa para ahorrar ese triaje en el caso más frecuente, priorizando simplicidad y previsibilidad sobre la optimización marginal (el triaje es barato). Ver [DECISIONS.md](DECISIONS.md).
+
+**Verificado con llamadas reales** contra una instancia de depuración aislada (puerto 3098, sin tocar el servidor del usuario):
+1. Petición de inventario con envergadura real (backend, BD, auth, informes, repo existente) → triaje detecta `claude_code_recommended: true` con `offer_message` específico mencionando Express/PostgreSQL del texto real.
+2. Petición no-software (correo pidiendo aumento de sueldo) → triaje devuelve `claude_code_recommended: false`, `offer_message`/`suggested_folder_name` correctamente `null`.
+3. Misma petición de inventario confirmando "sí" → `ai_tool_recommendation.primary.tool_id` es `claude_code`, `claude_code_workspace` presente.
+4. Misma petición de inventario con `excludeClaudeCode: true` (caso "no") → `primary` pasa a `claude_ai`, ninguna herramienta complementaria es Claude Code, `claude_code_workspace` es `null`, `final_prompt` mantiene la misma calidad y especificidad que antes.
+
+Verificado: `npm run typecheck`, `npm test` (22/22, 4 tests nuevos para `isTriageResult`) y `npm run build` sin errores.
+
 ## Pendiente / no hecho todavía
 
 - **La lentitud sigue sin resolverse del todo:** el cuello de botella real no es solo el volumen de tokens de salida, sino el tiempo de razonamiento del modelo. Pendiente de decidir con el usuario: medir `deepseek-v4-pro` (ya configurado en `.env`, pendiente de que el usuario reinicie `npm run dev` para probarlo) frente a `deepseek-flash`; considerar si el streaming de la respuesta (pintar el texto según llega, en vez de esperar el JSON completo) merece la pena dado que la respuesta es un único objeto JSON que no se puede parsear hasta estar completo.
