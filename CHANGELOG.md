@@ -4,6 +4,14 @@ Aquí se explica, en lenguaje sencillo, qué ha cambiado en cada versión de la 
 
 El número de versión tiene tres partes (por ejemplo 0.2.0): la primera cambia cuando hay un cambio muy grande, la segunda cuando se añade algo nuevo o se mejora algo existente, y la tercera cuando se corrige un error pequeño.
 
+## [0.16.3] - 2026-09-16
+
+### Mejorado
+- El aviso de que los precios/cuotas de la IA recomendada llevan más de 7 días sin actualizar ahora es mucho más visible (antes era una línea de texto discreta), e indica el comando exacto para pedirle a un agente con acceso a internet que los actualice.
+
+### Técnico
+- Se decidió no añadir una API de búsqueda automática al backend para refrescar estos datos (evaluado y descartado): introduciría una dependencia de pago o de cuota limitada gastada mayormente en comprobaciones sin cambios, con riesgo de guardar datos incorrectos sin supervisión humana. Se mantiene el proceso manual, solo mejorando cómo se comunica.
+
 ## [0.16.2] - 2026-09-16
 
 ### Mejorado

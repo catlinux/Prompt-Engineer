@@ -309,12 +309,17 @@ Cambio solo de texto del prompt — no toca `server/schema.ts` ni el modelo de d
 
 Verificado: `npm run typecheck`, `npm test` (22/22) y `npm run build` sin errores.
 
+## v0.16.3 — Aviso de datos desactualizados más visible (sin búsqueda automática)
+
+Al ejecutar la lista de pendientes, este punto entraba en conflicto con una decisión ya tomada (v0.5.0: sin API de búsqueda externa, para evitar dependencias de pago). Se consultó al usuario antes de implementar nada — ver razonamiento completo y decisión en [DECISIONS.md](DECISIONS.md). Se mantiene el proceso manual; solo se mejoró la transparencia: el aviso de más de 7 días sin actualizar (`SuggestedToolCard.tsx`) pasó de texto discreto a un banner destacado con el comando exacto a pedirle a un agente con búsqueda web.
+
+Verificado con una fecha forzada antigua contra una instancia de depuración aislada (puerto 3098): `recommendationsUpdatedAt` llega correctamente al frontend y activa la condición `stale` tras 7 días. Revertido el archivo de datos real tras la prueba (`git diff` limpio). Verificado: `npm run typecheck`, `npm test` (22/22) y `npm run build` sin errores.
+
 ## Pendiente / no hecho todavía
 
 - **La lentitud sigue sin resolverse del todo:** el cuello de botella real no es solo el volumen de tokens de salida, sino el tiempo de razonamiento del modelo. Pendiente de decidir con el usuario: medir `deepseek-v4-pro` (ya configurado en `.env`) frente a `deepseek-flash`; considerar si el streaming de la respuesta merece la pena dado que la respuesta es un único objeto JSON que no se puede parsear hasta estar completo.
 - Entrega del entorno de trabajo de Claude Code solo por copiar/pegar archivo a archivo — no genera un .zip descargable ni escribe directamente al disco. Aceptado conscientemente; podría mejorarse más adelante si aporta valor suficiente.
 - Observación menor de la revisión v0.13.0 (no confirmada como patrón, solo un caso): en una prueba real, varias decisiones no relacionadas con investigar el proyecto salieron todas como `decided_by: "user"`. Vigilar en próximas pruebas antes de decidir si hace falta ajustar la regla 2b.
-- Mejorar la actualización de las recomendaciones de IA para que no dependa de tener un agente con búsqueda web — limitación conocida y aceptada de v0.5.0, ver arriba.
 - Tests automatizados limitados: solo cubren la validación de coherencia de `server/schema.ts` (`npm test`, 22 tests). El resto del proyecto (frontend, integración con DeepSeek) sigue verificándose solo a mano.
 - Sin gestión de rate-limiting ni de peticiones concurrentes en el backend.
 

@@ -477,8 +477,26 @@ button:focus-visible {
 
 .suggested-tool__stale-notice {
   color: var(--warn);
-  font-size: 0.8rem;
-  font-weight: 600;
+  background: var(--warn-bg);
+  border: 1px solid var(--warn);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.suggested-tool__stale-notice p {
+  margin: 8px 0 0;
+  color: var(--fg);
+  font-weight: 400;
+}
+
+.suggested-tool__stale-notice code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--bg-raised);
+  padding: 2px 6px;
+  border-radius: 5px;
 }
 
 /* --- Prompt final --- */

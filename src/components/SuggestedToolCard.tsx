@@ -93,11 +93,19 @@ export function SuggestedToolCard({ recommendation, catalog, updatedAt }: Sugges
         </div>
       )}
 
-      {updatedAt && (
-        <p className={stale ? "suggested-tool__stale-notice" : "suggested-tool__updated-notice"}>
-          Datos de precios/cuotas actualizados el {updatedAt}
-          {stale ? " — puede que ya no estén al día. Puedes pedirle a Claude que los actualice." : "."}
-        </p>
+      {updatedAt && stale && (
+        <div className="suggested-tool__stale-notice">
+          <strong>Datos de precios/cuotas desactualizados</strong> — se actualizaron el {updatedAt} (hace más de 7
+          días) y pueden no reflejar la realidad actual.
+          <p>
+            Para refrescarlos, pide a un agente con acceso a internet (como Claude Code) que siga las instrucciones
+            de <code>docs/ACTUALIZAR_RECOMENDACIONES_IA.md</code> — por ejemplo: <em>"Actualiza las recomendaciones
+            de IA siguiendo docs/ACTUALIZAR_RECOMENDACIONES_IA.md"</em>.
+          </p>
+        </div>
+      )}
+      {updatedAt && !stale && (
+        <p className="suggested-tool__updated-notice">Datos de precios/cuotas actualizados el {updatedAt}.</p>
       )}
     </section>
   );

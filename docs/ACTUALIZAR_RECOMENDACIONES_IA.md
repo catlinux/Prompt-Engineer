@@ -32,6 +32,6 @@ Esta aplicación sugiere qué IA (o combinación de IAs) conviene usar para cada
 5. Verificar que la aplicación sigue arrancando (`npm run typecheck`) y que la tarjeta de recomendación se ve bien en pantalla con una petición de prueba.
 6. Anotar en `docs/STATE.md` que se ha hecho una actualización, con la fecha.
 
-## Limitación conocida
+## Limitación conocida (aceptada, no un descuido)
 
-Quien descargue este proyecto sin un agente con búsqueda web (como Claude Code) no puede refrescar estos datos por sí mismo: se quedan congelados en la fecha de la última actualización que se subió al repositorio. Es una limitación aceptada conscientemente para esta versión — ver [DECISIONS.md](DECISIONS.md). Mejorarlo (por ejemplo con una API de búsqueda propia del backend) queda como posible mejora futura, no implementada todavía.
+Quien descargue este proyecto sin un agente con búsqueda web (como Claude Code) no puede refrescar estos datos por sí mismo: se quedan congelados en la fecha de la última actualización que se subió al repositorio. **No se ha añadido una API de búsqueda automática al backend a propósito** — ver [DECISIONS.md](DECISIONS.md) para el razonamiento completo (introduciría una dependencia de pago o de cuota gratuita limitada, gastada en su mayoría en comprobaciones que no encuentran ningún cambio, con riesgo de guardar datos incorrectos sin supervisión humana). En vez de eso, la aplicación avisa claramente en pantalla cuando los datos llevan más de 7 días sin actualizar (`SuggestedToolCard.tsx`), indicando el mismo comando exacto de este documento para pedirle a un agente que los refresque.
