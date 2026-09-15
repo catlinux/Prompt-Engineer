@@ -4,6 +4,18 @@ import { validateStructuredPrompt, SchemaValidationError } from "./schema.js";
 
 const VALID_TOOL_IDS = new Set(["claude_code", "claude_ai"]);
 
+function importantPendingDecision(overrides: Record<string, unknown> = {}) {
+  return {
+    topic: "Tema de ejemplo",
+    provisional_approach: "Hipótesis provisional de ejemplo.",
+    why_important: "Motivo de ejemplo.",
+    what_could_change: "Qué cambiaría, de ejemplo.",
+    decided_by: "agent",
+    confirmation_trigger: null,
+    ...overrides,
+  };
+}
+
 function baseValidPrompt(overrides: Record<string, unknown> = {}) {
   return {
     is_software_request: true,
@@ -66,12 +78,12 @@ test("rechaza cuando el mismo topic aparece en important_pending_decisions y en 
 test("acepta el mismo topic solo cuando aparece en una única categoría", () => {
   const input = baseValidPrompt({
     important_pending_decisions: [
-      {
+      importantPendingDecision({
         topic: "Zona del evento",
         provisional_approach: "Se asume Azshara.",
         why_important: "Afecta la decoración.",
         what_could_change: "Cambiarían las coordenadas.",
-      },
+      }),
     ],
     claude_code: {
       ...baseValidPrompt().claude_code,
@@ -148,16 +160,19 @@ test("caso representativo: decisión bloqueante válida", () => {
 test("caso representativo: decisión importante no bloqueante válida", () => {
   const input = baseValidPrompt({
     important_pending_decisions: [
-      {
+      importantPendingDecision({
         topic: "Zona del torneo",
         provisional_approach: "Se asume Azshara por ser poco transitada.",
         why_important: "Afecta la decoración y las coordenadas.",
         what_could_change: "Otra zona implicaría recalcular coordenadas y decoración.",
-      },
+        decided_by: "agent",
+        confirmation_trigger: null,
+      }),
     ],
   });
   const result = validateStructuredPrompt(input, VALID_TOOL_IDS);
   assert.equal(result.important_pending_decisions.length, 1);
+  assert.equal(result.important_pending_decisions[0].decided_by, "agent");
 });
 
 test("caso representativo: decisión delegable (recommendation) válida", () => {
@@ -181,16 +196,40 @@ test("caso representativo: decisión aplazable válida", () => {
 test("caso representativo: decisión importante que solo necesita confirmación en una fase posterior", () => {
   const input = baseValidPrompt({
     important_pending_decisions: [
-      {
+      importantPendingDecision({
         topic: "Proveedor de pagos",
         provisional_approach: "Se asume Stripe para poder avanzar con el checkout.",
         why_important: "No bloquea el desarrollo del catálogo ni la arquitectura.",
-        what_could_change: "El proveedor definitivo debe confirmarse antes del despliegue a producción; si cambia, solo afecta la integración de pagos, no el resto del proyecto.",
-      },
+        what_could_change: "Si cambia, solo afecta la integración de pagos, no el resto del proyecto.",
+        decided_by: "user",
+        confirmation_trigger: "Confirmar antes de desplegar a producción.",
+      }),
     ],
   });
   const result = validateStructuredPrompt(input, VALID_TOOL_IDS);
-  assert.match(result.important_pending_decisions[0].what_could_change, /despliegue a producción/);
+  assert.equal(result.important_pending_decisions[0].decided_by, "user");
+  assert.match(result.important_pending_decisions[0].confirmation_trigger ?? "", /desplegar a producción/);
+});
+
+test("rechaza important_pending_decision con decided_by inválido", () => {
+  const input = baseValidPrompt({
+    important_pending_decisions: [importantPendingDecision({ decided_by: "nadie" })],
+  });
+  assert.throws(() => validateStructuredPrompt(input, VALID_TOOL_IDS), SchemaValidationError);
+});
+
+test("acepta important_pending_decision con decided_by 'agent_after_investigation'", () => {
+  const input = baseValidPrompt({
+    important_pending_decisions: [
+      importantPendingDecision({
+        topic: "Motor de base de datos",
+        decided_by: "agent_after_investigation",
+        why_important: "Depende de lo que ya exista en el proyecto real.",
+      }),
+    ],
+  });
+  const result = validateStructuredPrompt(input, VALID_TOOL_IDS);
+  assert.equal(result.important_pending_decisions[0].decided_by, "agent_after_investigation");
 });
 
 test("contradicción 'puede decidir' vs 'debe consultar': se detecta y se rechaza", () => {

@@ -201,10 +201,38 @@ Continuación del diagnóstico de lentitud de v0.11.0. Dos cambios, medidos con 
 
 Verificado: `npm run typecheck`, `npm test` (16/16, se añadieron 2 tests para el nuevo `ClaudeCodeWorkspaceOfferInfo`) y `npm run build` sin errores. Verificado con llamadas reales que ambos endpoints devuelven contenido de buena calidad y específico del proyecto.
 
+## v0.13.0 — Revisión de arquitectura: quién decide y cuándo confirmar
+
+El usuario pidió una revisión de calidad (sin reescritura general, sin tocar el motor de recomendación de IA) para comprobar si el sistema distingue bien: requisitos confirmados, información a investigar, decisiones bloqueantes, importantes-no-bloqueantes, decisiones que puede tomar el agente, decisiones que el agente debe investigar antes de tomar, decisiones que solo necesitan confirmación antes de una acción irreversible, y decisiones aplazables.
+
+**Inspección previa (antes de tocar nada):** se revisó `server/deepseek.ts`, `server/schema.ts`, `server/schema.test.ts`, `StructuredPromptView.tsx` y `ImportantPendingDecisions.tsx`. Confirmado que ya funcionaban bien y no se tocaron: la distinción bloqueante/importante/delegable/aplazable (v0.8.0), la detección de duplicados entre categorías (v0.10.0), la restricción de `decision_references` (v0.10.2), y el motor de `ai_tool_recommendation` (v0.7.0).
+
+**Problemas reales detectados (3):**
+1. No existía un campo explícito para "quién decide" — no se distinguía entre una decisión que el agente puede resolver directamente y una que solo puede resolver bien después de investigar el proyecto real (ej. "qué base de datos usar" depende de lo que ya exista).
+2. No existía un campo estructurado para "cuándo hay que confirmar" — el `what_could_change` de texto libre a veces mencionaba una fase (ej. "antes de producción") pero no había ninguna estructura que lo garantizara ni lo distinguiera de una decisión bloqueante.
+3. La regla del `final_prompt` no mencionaba explícitamente conservar estas condiciones de confirmación, con riesgo real de perder esa información en la síntesis.
+
+**Cambio mínimo implementado:** se amplió únicamente `important_pending_decisions` (ninguna categoría nueva, ninguna otra categoría tocada) con dos campos:
+- `decided_by: "user" | "agent" | "agent_after_investigation"` — quién debería tomar la decisión definitiva.
+- `confirmation_trigger: string | null` — solo se rellena cuando la decisión, aunque no bloquee ahora, deba confirmarse obligatoriamente antes de una acción irreversible o de alto riesgo (producción, dinero real, borrado de datos, comunicaciones públicas). `null` es lo normal; no es una forma disimulada de convertir la decisión en bloqueante.
+
+System prompt (`server/deepseek.ts`): nuevas reglas 2b (cómo elegir `decided_by`, con criterio explícito para no usar "user" por defecto) y 2c (cuándo rellenar `confirmation_trigger`). Regla 6 (`final_prompt`) reforzada para que mencione explícitamente las condiciones de confirmación cuando existan. `WORKSPACE_SYSTEM_PROMPT` también actualizado para que el TODO.md refleje `decided_by`/`confirmation_trigger`.
+
+`server/schema.ts`: `isImportantPendingDecisionArray()` valida ahora `decided_by` (contra los 3 valores válidos) y `confirmation_trigger` (string o null).
+
+**UI:** `ImportantPendingDecisions.tsx` muestra una etiqueta con quién decide, y si hay `confirmation_trigger`, una segunda etiqueta de aviso con la condición.
+
+**Tests:** 3 tests nuevos (18 en total) — decisión con `decided_by` inválido rechazada, `agent_after_investigation` válido, y confirmación en fase posterior usando el campo real en vez de texto libre dentro de `what_could_change`.
+
+**Verificado con llamada real** (bot de trading con Claude Code sobre proyecto existente): 0 decisiones bloqueantes, 5 importantes-no-bloqueantes bien clasificadas — `confirmation_trigger` solo se rellenó en las dos decisiones que de verdad implican dinero real ("confirmar antes de ejecutar la primera orden con fondos reales", "confirmar antes de habilitar el trading con fondos reales"), las otras 3 quedaron en `null` correctamente (sin inflar artificialmente); `decided_by: "agent_after_investigation"` apareció exactamente en la decisión que depende del proyecto existente ("Integración con el proyecto existente"). Confirmado que el `final_prompt` conserva la condición de confirmación ("Antes de habilitar el trading con fondos reales, deberás confirmar explícitamente...") sin alargarse innecesariamente.
+
+Verificado: `npm run typecheck`, `npm test` (18/18) y `npm run build` sin errores.
+
 ## Pendiente / no hecho todavía
 
 - **La lentitud sigue sin resolverse del todo:** el cuello de botella real no es solo el volumen de tokens de salida, sino el tiempo de razonamiento del modelo. Pendiente de decidir con el usuario: medir `deepseek-v4-pro` (ya configurado en `.env`, pendiente de que el usuario reinicie `npm run dev` para probarlo) frente a `deepseek-flash`; considerar si el streaming de la respuesta (pintar el texto según llega, en vez de esperar el JSON completo) merece la pena dado que la respuesta es un único objeto JSON que no se puede parsear hasta estar completo.
 - Entrega del entorno de trabajo de Claude Code solo por copiar/pegar archivo a archivo — no genera un .zip descargable ni escribe directamente al disco (la app no tiene acceso al sistema de archivos del usuario). Aceptado conscientemente para esta versión; podría mejorarse más adelante si aporta valor suficiente.
+- Observación menor de la revisión v0.13.0 (no confirmada como patrón, solo un caso): en la prueba real, las 4 decisiones no relacionadas con investigar el proyecto salieron todas como `decided_by: "user"`. Podría ser correcto para ese caso concreto (trading implica muchas preferencias de riesgo genuinamente personales) o podría indicar una ligera tendencia a usar "user" por defecto — vigilar en próximas pruebas antes de decidir si hace falta ajustar la regla 2b.
 
 - Botón para borrar la petición actual y empezar una consulta nueva, cerca del campo de entrada de texto. Pedido por el usuario, no implementado todavía.
 - Mejorar la actualización de las recomendaciones de IA para que no dependa de tener un agente con búsqueda web (por ejemplo con una API de búsqueda propia del backend) — limitación conocida y aceptada de v0.5.0, ver arriba.

@@ -4,6 +4,15 @@ Aquí se explica, en lenguaje sencillo, qué ha cambiado en cada versión de la 
 
 El número de versión tiene tres partes (por ejemplo 0.2.0): la primera cambia cuando hay un cambio muy grande, la segunda cuando se añade algo nuevo o se mejora algo existente, y la tercera cuando se corrige un error pequeño.
 
+## [0.13.0] - 2026-09-15
+
+### Añadido
+- Las decisiones importantes pendientes ahora indican quién debería tomarlas: tú, el agente directamente, o el agente después de investigar tu proyecto real (por ejemplo, "qué base de datos usar" depende de lo que ya haya en el proyecto). Se ve como una etiqueta junto a cada decisión.
+- Cuando una decisión no bloquea el trabajo ahora pero sí necesitará tu confirmación antes de algo delicado (poner algo en producción, operar con dinero real, borrar datos), la aplicación lo indica claramente con un aviso, y esa condición también se conserva en el prompt final.
+
+### Revisado (sin cambios de comportamiento)
+- Revisión completa de coherencia y arquitectura: se confirmó que la recomendación de qué IA usar y la detección de contradicciones entre categorías de decisión ya funcionaban bien y no se han tocado.
+
 ## [0.12.0] - 2026-09-15
 
 ### Cambiado

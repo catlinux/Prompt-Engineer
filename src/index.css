@@ -256,6 +256,16 @@ button:focus-visible {
   padding: 2px 9px;
 }
 
+.badge--muted {
+  background: var(--bg-raised);
+  color: var(--muted);
+}
+
+.badge--warn {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
 .tool-task-breakdown {
   margin: 0 0 14px;
   padding-left: 20px;
@@ -348,6 +358,13 @@ button:focus-visible {
   font-size: 0.82rem;
   font-style: italic;
   margin-top: 3px;
+}
+
+.important-pending__meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 6px;
 }
 
 .open-questions-form__hint {

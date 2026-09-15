@@ -5,6 +5,7 @@ import type {
   ClaudeCodeSection,
   ClaudeCodeWorkspaceOfferInfo,
   ContentCategory,
+  DecidedBy,
   DeferrableDecision,
   DetectedTask,
   ImportantPendingDecision,
@@ -13,6 +14,12 @@ import type {
   Recommendation,
   StructuredPrompt,
 } from "../src/types.js";
+
+const DECIDED_BY_VALUES: DecidedBy[] = ["user", "agent", "agent_after_investigation"];
+
+function isDecidedBy(value: unknown): value is DecidedBy {
+  return typeof value === "string" && (DECIDED_BY_VALUES as string[]).includes(value);
+}
 
 const CONTENT_CATEGORIES: ContentCategory[] = [
   "texto_general",
@@ -49,15 +56,18 @@ function isNecessaryDecisionArray(value: unknown): value is NecessaryDecision[] 
 function isImportantPendingDecisionArray(value: unknown): value is ImportantPendingDecision[] {
   return (
     Array.isArray(value) &&
-    value.every(
-      (item) =>
-        typeof item === "object" &&
-        item !== null &&
-        typeof (item as ImportantPendingDecision).topic === "string" &&
-        typeof (item as ImportantPendingDecision).provisional_approach === "string" &&
-        typeof (item as ImportantPendingDecision).why_important === "string" &&
-        typeof (item as ImportantPendingDecision).what_could_change === "string"
-    )
+    value.every((item) => {
+      if (typeof item !== "object" || item === null) return false;
+      const d = item as ImportantPendingDecision;
+      return (
+        typeof d.topic === "string" &&
+        typeof d.provisional_approach === "string" &&
+        typeof d.why_important === "string" &&
+        typeof d.what_could_change === "string" &&
+        isDecidedBy(d.decided_by) &&
+        (d.confirmation_trigger === null || typeof d.confirmation_trigger === "string")
+      );
+    })
   );
 }
 

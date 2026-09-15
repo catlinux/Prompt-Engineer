@@ -14,11 +14,15 @@ export interface NecessaryDecision {
   why_necessary: string;
 }
 
+export type DecidedBy = "user" | "agent" | "agent_after_investigation";
+
 export interface ImportantPendingDecision {
   topic: string;
   provisional_approach: string;
   why_important: string;
   what_could_change: string;
+  decided_by: DecidedBy;
+  confirmation_trigger: string | null;
 }
 
 export interface DeferrableDecision {
