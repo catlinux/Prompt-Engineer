@@ -4,6 +4,16 @@ Aquí se explica, en lenguaje sencillo, qué ha cambiado en cada versión de la 
 
 El número de versión tiene tres partes (por ejemplo 0.2.0): la primera cambia cuando hay un cambio muy grande, la segunda cuando se añade algo nuevo o se mejora algo existente, y la tercera cuando se corrige un error pequeño.
 
+## [0.15.0] - 2026-09-15
+
+### Añadido
+- Historial de conversaciones con barra lateral: cada consulta se puede guardar como un hilo con título, y desde la barra lateral se puede renombrar, eliminar o volver a abrir.
+- Al copiar el prompt final por primera vez en una consulta nueva, se pregunta si quieres guardarla en el historial o descartarla.
+- Si continúas una conversación guardada con una nueva petición relacionada, la aplicación recuerda el contexto de las peticiones anteriores del mismo hilo (como un chat), en vez de tratar cada petición como algo aislado.
+
+### Técnico
+- Se añade persistencia con SQLite (antes la aplicación no guardaba nada entre sesiones). Solo se usa para el historial de conversaciones.
+
 ## [0.14.0] - 2026-09-15
 
 ### Cambiado

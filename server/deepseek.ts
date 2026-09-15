@@ -1,7 +1,13 @@
 import OpenAI from "openai";
 import { validateStructuredPrompt, isTriageResult, SchemaValidationError } from "./schema.js";
 import { formatCatalogForPrompt, getValidToolIds } from "./aiRecommendations.js";
-import type { StructuredPrompt, QuestionAnswer, ClaudeCodeWorkspace, TriageResult } from "../src/types.js";
+import type {
+  StructuredPrompt,
+  QuestionAnswer,
+  ClaudeCodeWorkspace,
+  TriageResult,
+  ThreadHistoryEntry,
+} from "../src/types.js";
 
 const TRIAGE_SYSTEM_PROMPT = `Eres un clasificador rápido. Tu único trabajo es decidir, a partir de una petición en lenguaje natural, dos cosas: si es una petición de software, y si merece la pena ofrecer explícitamente Claude Code (agente de código autónomo) ANTES de hacer ningún análisis completo — para no gastar tiempo/tokens analizando a fondo un proyecto si el usuario prefiere otra herramienta.
 
@@ -22,6 +28,8 @@ Responde EXCLUSIVAMENTE con un objeto JSON válido (sin markdown, sin texto ante
 const SYSTEM_PROMPT = `Eres un ingeniero de requisitos e instrucciones experto, no un simple generador de texto. Tu trabajo es analizar una petición en lenguaje natural y convertirla en instrucciones precisas, coherentes y accionables para otra IA. La calidad no depende de la longitud: depende de razonar bien antes de generar.
 
 PRINCIPIO GENERAL: piensa antes de generar. Pregunta solo cuando sea necesario. Recomienda cuando pueda ayudar. Diferencia siempre hechos, requisitos del usuario, decisiones y recomendaciones — nunca mezcles estas categorías.
+
+CONTINUIDAD DE HILO: si el mensaje del usuario aparece después de una conversación previa (mensajes anteriores en este mismo hilo), trata esas peticiones y resultados anteriores como contexto ya confirmado del mismo proyecto — no repitas desde cero decisiones ya resueltas en mensajes anteriores, no contradigas lo ya establecido salvo que el usuario lo pida explícitamente, y entiende la petición actual como una continuación o ampliación del mismo proyecto, no como algo aislado.
 
 1. SEPARAR TIPOS DE INFORMACIÓN (no mezclar nunca):
    - "confirmed_requirements": solo cosas que el usuario ha dicho explícitamente o que se deducen sin ninguna duda razonable del texto. Nunca inventes requisitos. Una recomendación tuya jamás debe aparecer aquí.
@@ -170,21 +178,31 @@ function buildUserMessage(userRequest: string, answers?: QuestionAnswer[], exclu
   return message;
 }
 
+function buildThreadMessages(
+  threadHistory: ThreadHistoryEntry[] | undefined,
+  userMessage: string
+): OpenAI.Chat.ChatCompletionMessageParam[] {
+  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [{ role: "system", content: SYSTEM_PROMPT }];
+  for (const entry of threadHistory ?? []) {
+    messages.push({ role: "user", content: entry.userRequest });
+    messages.push({ role: "assistant", content: JSON.stringify(entry.result) });
+  }
+  messages.push({ role: "user", content: userMessage });
+  return messages;
+}
+
 class MalformedResponseError extends Error {}
 
 async function callDeepSeekOnce(
   client: OpenAI,
   config: DeepSeekConfig,
-  userMessage: string
+  messages: OpenAI.Chat.ChatCompletionMessageParam[]
 ): Promise<StructuredPrompt> {
   let completion;
   try {
     completion = await client.chat.completions.create({
       model: config.model,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userMessage },
-      ],
+      messages,
       response_format: { type: "json_object" },
       temperature: 0.3,
       max_tokens: 24576,
@@ -245,11 +263,13 @@ export async function generateStructuredPrompt(
   config: DeepSeekConfig,
   userRequest: string,
   answers?: QuestionAnswer[],
-  excludeClaudeCode?: boolean
+  excludeClaudeCode?: boolean,
+  threadHistory?: ThreadHistoryEntry[]
 ): Promise<StructuredPrompt> {
   const client = new OpenAI({ apiKey: config.apiKey, baseURL: config.baseURL });
   const userMessage = buildUserMessage(userRequest, answers, excludeClaudeCode);
-  return withSingleRetry(() => callDeepSeekOnce(client, config, userMessage));
+  const messages = buildThreadMessages(threadHistory, userMessage);
+  return withSingleRetry(() => callDeepSeekOnce(client, config, messages));
 }
 
 async function callTriageOnce(client: OpenAI, config: DeepSeekConfig, userRequest: string): Promise<TriageResult> {

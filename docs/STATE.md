@@ -246,6 +246,32 @@ El usuario pidió reducir el consumo innecesario: cuando la herramienta recomend
 
 Verificado: `npm run typecheck`, `npm test` (22/22, 4 tests nuevos para `isTriageResult`) y `npm run build` sin errores.
 
+## v0.15.0 — Historial de conversaciones con SQLite y continuación real de hilo
+
+El usuario pidió una barra lateral de historial tipo chat: título por conversación, renombrar, eliminar, y que un hilo se pueda continuar recordando el contexto de peticiones anteriores del mismo proyecto (no solo volver a consultar un resultado ya cerrado). También pidió que, al copiar el prompt final, se pregunte si guardar la consulta en el historial o descartarla.
+
+**Cambio de fondo consciente:** se adopta SQLite (`better-sqlite3`) para persistencia, rompiendo deliberadamente la regla previa "V1 sin base de datos" — se preguntó explícitamente al usuario (¿localStorage basta?) y prefirió una base de datos real porque el objetivo es que los hilos recuerden bien el contexto, no solo listar texto. Ver justificación completa en [DECISIONS.md](DECISIONS.md).
+
+**Backend:**
+- `server/db.ts`: esquema SQLite (`conversations`, `messages`), fichero `data/history.db` (gitignored).
+- `server/history.ts`: CRUD de conversaciones y mensajes.
+- Endpoints nuevos: `GET/POST /api/conversations`, `GET/PATCH/DELETE /api/conversations/:id`, `POST /api/conversations/:id/messages`.
+- `POST /api/generate-prompt` acepta `threadHistory` (peticiones+resultados anteriores del mismo hilo) y los antepone como turnos reales `user`/`assistant` en la llamada a DeepSeek (`buildThreadMessages()` en `server/deepseek.ts`) — contexto real, no un resumen. Nueva regla "CONTINUIDAD DE HILO" en `SYSTEM_PROMPT`.
+
+**Frontend:**
+- `Sidebar.tsx`: lista de conversaciones guardadas, botón "Nueva consulta", renombrar inline, eliminar con confirmación.
+- `SaveConversationPrompt.tsx`: diálogo que aparece la primera vez que se copia el `final_prompt` de un hilo no guardado — "Guardar" o "No, descartar". Si se descarta, nunca se escribe en SQLite (no hay guardado oculto en segundo plano).
+- `App.tsx` reestructurado: layout de dos columnas (sidebar + contenido), el hilo activo se guarda como lista de mensajes en memoria y se muestra completo y apilado (como un chat), reutilizando `StructuredPromptView` por cada mensaje.
+- `#root`/`.app-main` cambian de contenedor único centrado a layout de sidebar + columna principal (`src/index.css`), manteniendo el mismo sistema de tokens visuales existente.
+
+**Verificado con llamadas reales** contra una instancia de depuración aislada (puerto 3098, sin tocar el servidor ni la base de datos del usuario):
+1. Conversación creada con un primer mensaje (blog de fotografía con Astro) vía `POST /api/conversations`.
+2. Segunda petición relacionada ("añade comentarios") enviando `threadHistory` con el primer mensaje → el `final_prompt` resultante reconoce correctamente que es una ampliación del mismo blog, no un proyecto nuevo — confirma que el contexto real del hilo llega a DeepSeek.
+3. Segundo mensaje añadido a la conversación ya guardada vía `POST /api/conversations/:id/messages` → la conversación pasa a tener 2 mensajes correctamente.
+4. Renombrar (`PATCH`) y eliminar (`DELETE`, 204) verificados — tras eliminar, la conversación desaparece del listado.
+
+Verificado: `npm run typecheck` y `npm run build` sin errores.
+
 ## Pendiente / no hecho todavía
 
 - **La lentitud sigue sin resolverse del todo:** el cuello de botella real no es solo el volumen de tokens de salida, sino el tiempo de razonamiento del modelo. Pendiente de decidir con el usuario: medir `deepseek-v4-pro` (ya configurado en `.env`, pendiente de que el usuario reinicie `npm run dev` para probarlo) frente a `deepseek-flash`; considerar si el streaming de la respuesta (pintar el texto según llega, en vez de esperar el JSON completo) merece la pena dado que la respuesta es un único objeto JSON que no se puede parsear hasta estar completo.

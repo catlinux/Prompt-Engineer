@@ -114,10 +114,16 @@ export interface QuestionAnswer {
   answer: string;
 }
 
+export interface ThreadHistoryEntry {
+  userRequest: string;
+  result: StructuredPrompt;
+}
+
 export interface GeneratePromptRequest {
   userRequest: string;
   answers?: QuestionAnswer[];
   excludeClaudeCode?: boolean;
+  threadHistory?: ThreadHistoryEntry[];
 }
 
 export interface TriageResult {
@@ -171,4 +177,46 @@ export interface GenerateWorkspaceResponse {
 
 export interface ApiErrorResponse {
   error: string;
+}
+
+export interface ConversationMessage {
+  id: number;
+  userRequest: string;
+  triage: TriageResult | null;
+  result: StructuredPrompt;
+  createdAt: string;
+}
+
+export interface ConversationSummary {
+  id: number;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConversationDetail extends ConversationSummary {
+  messages: ConversationMessage[];
+}
+
+export interface CreateConversationRequest {
+  title: string;
+  messages: Array<{ userRequest: string; triage: TriageResult | null; result: StructuredPrompt }>;
+}
+
+export interface CreateConversationResponse {
+  conversation: ConversationDetail;
+}
+
+export interface AppendMessageRequest {
+  userRequest: string;
+  triage: TriageResult | null;
+  result: StructuredPrompt;
+}
+
+export interface AppendMessageResponse {
+  message: ConversationMessage;
+}
+
+export interface RenameConversationRequest {
+  title: string;
 }

@@ -14,6 +14,7 @@ interface StructuredPromptViewProps {
   recommendationsUpdatedAt: string | null;
   loading: boolean;
   onRegenerate: (answers: QuestionAnswer[]) => void;
+  onFinalPromptCopied?: () => void;
 }
 
 function ListSection({ title, items }: { title: string; items: string[] }) {
@@ -38,6 +39,7 @@ export function StructuredPromptView({
   recommendationsUpdatedAt,
   loading,
   onRegenerate,
+  onFinalPromptCopied,
 }: StructuredPromptViewProps) {
   const [workspaceChoice, setWorkspaceChoice] = useState<WorkspaceChoice>("pending");
   const awaitingWorkspaceChoice = result.claude_code_workspace !== null && workspaceChoice === "pending";
@@ -183,7 +185,7 @@ export function StructuredPromptView({
           <section className="section final-prompt">
             <div className="final-prompt__header">
               <h3>Prompt final (listo para copiar)</h3>
-              <CopyButton text={result.final_prompt} />
+              <CopyButton text={result.final_prompt} onCopied={onFinalPromptCopied} />
             </div>
             <pre>{result.final_prompt}</pre>
           </section>
