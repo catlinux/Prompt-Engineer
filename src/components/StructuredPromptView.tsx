@@ -7,6 +7,7 @@ import { OpenQuestionsForm } from "./OpenQuestionsForm";
 import { SuggestedToolCard } from "./SuggestedToolCard";
 
 interface StructuredPromptViewProps {
+  userRequest: string;
   result: StructuredPrompt;
   model: string;
   toolCatalog: Record<string, AiToolCatalogEntry>;
@@ -30,6 +31,7 @@ function ListSection({ title, items }: { title: string; items: string[] }) {
 }
 
 export function StructuredPromptView({
+  userRequest,
   result,
   model,
   toolCatalog,
@@ -57,7 +59,9 @@ export function StructuredPromptView({
 
       {result.claude_code_workspace && (
         <ClaudeCodeWorkspaceOffer
-          workspace={result.claude_code_workspace}
+          offerInfo={result.claude_code_workspace}
+          userRequest={userRequest}
+          result={result}
           choice={workspaceChoice}
           onChoice={setWorkspaceChoice}
         />

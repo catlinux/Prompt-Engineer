@@ -157,6 +157,27 @@ h1 {
   font-variant-numeric: tabular-nums;
 }
 
+.request-input__submit {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.request-input__loading-hint {
+  color: var(--muted);
+  font-size: 0.82rem;
+  margin-top: 8px;
+  margin-bottom: 0;
+  line-height: 1.5;
+}
+
+.elapsed-timer {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
 /* --- Botones --- */
 
 button {

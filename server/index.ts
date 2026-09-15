@@ -1,8 +1,15 @@
 import "dotenv/config";
 import express from "express";
-import { generateStructuredPrompt, loadDeepSeekConfig, DeepSeekError } from "./deepseek.js";
+import { generateStructuredPrompt, generateClaudeCodeWorkspace, loadDeepSeekConfig, DeepSeekError } from "./deepseek.js";
 import { getCatalogAsRecord, getRecommendationsUpdatedAt } from "./aiRecommendations.js";
-import type { GeneratePromptRequest, GeneratePromptResponse, ApiErrorResponse, QuestionAnswer } from "../src/types.js";
+import type {
+  GeneratePromptRequest,
+  GeneratePromptResponse,
+  GenerateWorkspaceRequest,
+  GenerateWorkspaceResponse,
+  ApiErrorResponse,
+  QuestionAnswer,
+} from "../src/types.js";
 
 const app = express();
 app.use(express.json({ limit: "100kb" }));
@@ -54,6 +61,39 @@ app.post("/api/generate-prompt", async (req, res) => {
       return;
     }
     console.error("Error inesperado en /api/generate-prompt:", err);
+    const error: ApiErrorResponse = { error: "Error interno del servidor." };
+    res.status(500).json(error);
+  }
+});
+
+app.post("/api/generate-workspace", async (req, res) => {
+  const body = req.body as Partial<GenerateWorkspaceRequest>;
+  const userRequest = body.userRequest;
+  const result = body.result;
+
+  if (typeof userRequest !== "string" || userRequest.trim().length === 0) {
+    const error: ApiErrorResponse = { error: "Falta la petición original." };
+    res.status(400).json(error);
+    return;
+  }
+  if (typeof result !== "object" || result === null || typeof result.objective !== "string") {
+    const error: ApiErrorResponse = { error: "Falta el análisis (result) sobre el que generar el entorno de trabajo." };
+    res.status(400).json(error);
+    return;
+  }
+
+  try {
+    const config = loadDeepSeekConfig();
+    const workspace = await generateClaudeCodeWorkspace(config, result);
+    const response: GenerateWorkspaceResponse = { workspace };
+    res.json(response);
+  } catch (err) {
+    if (err instanceof DeepSeekError) {
+      const error: ApiErrorResponse = { error: err.message };
+      res.status(502).json(error);
+      return;
+    }
+    console.error("Error inesperado en /api/generate-workspace:", err);
     const error: ApiErrorResponse = { error: "Error interno del servidor." };
     res.status(500).json(error);
   }

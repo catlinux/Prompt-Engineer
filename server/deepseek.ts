@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import { validateStructuredPrompt, SchemaValidationError } from "./schema.js";
 import { formatCatalogForPrompt, getValidToolIds } from "./aiRecommendations.js";
-import type { StructuredPrompt, QuestionAnswer } from "../src/types.js";
+import type { StructuredPrompt, QuestionAnswer, ClaudeCodeWorkspace } from "../src/types.js";
 
 const SYSTEM_PROMPT = `Eres un ingeniero de requisitos e instrucciones experto, no un simple generador de texto. Tu trabajo es analizar una petición en lenguaje natural y convertirla en instrucciones precisas, coherentes y accionables para otra IA. La calidad no depende de la longitud: depende de razonar bien antes de generar.
 
@@ -51,12 +51,9 @@ PRINCIPIO GENERAL: piensa antes de generar. Pregunta solo cuando sea necesario. 
    h. Esta recomendación es orientativa y NUNCA debe convertirse en un requisito dentro de "final_prompt" ni en ningún otro campo de análisis del proyecto.
    i. Si la petición no requiere ninguna herramienta de IA en particular o el catálogo no tiene nada aplicable, "ai_tool_recommendation" puede ser null.
 
-10. ENTORNO DE TRABAJO PARA CLAUDE CODE (campo "claude_code_workspace"). Solo rellena este campo cuando "ai_tool_recommendation.primary.tool_id" sea exactamente "claude_code" — en cualquier otro caso debe ser null. Cuando aplique, prepara el contenido real y completo (no una descripción de lo que debería llevar, el texto final ya redactado) para que el usuario lo copie y lo guarde en su proyecto:
+10. OFERTA DE ENTORNO DE TRABAJO PARA CLAUDE CODE (campo "claude_code_workspace"). Solo rellena este campo cuando "ai_tool_recommendation.primary.tool_id" sea exactamente "claude_code" — en cualquier otro caso debe ser null. Es solo la oferta breve, NO el contenido de los archivos (eso se genera aparte, después, solo si el usuario acepta):
    a. "offer_message": una frase corta y natural ofreciendo explícitamente preparar el entorno de trabajo para Claude Code, explicando brevemente por qué se recomienda (volumen/complejidad del trabajo, naturaleza incremental del proyecto, etc. — adapta el motivo a la petición concreta, no uses una frase genérica siempre igual).
    b. "suggested_folder_name": un nombre de carpeta corto en minúsculas con guiones, derivado del proyecto (ej. "gestor-gastos-personales").
-   c. "claude_md_content": el contenido completo y listo para usar de un archivo CLAUDE.md — instrucciones persistentes para que cualquier sesión futura de Claude Code entienda el proyecto sin depender de esta conversación: qué es el proyecto, reglas fijas que no debe romper, cómo ejecutar y verificar, cómo actualizar la documentación. Basado en el análisis ya hecho (rol, objetivo, restricciones, decisiones tomadas e hipótesis asumidas), no genérico.
-   d. "todo_md_content": el contenido completo de un archivo TODO.md con el trabajo pendiente estructurado: qué construir primero (basado en "claude_code.what_to_build" y las prioridades del análisis), y las decisiones pendientes (bloqueantes e importantes-no-bloqueantes) tal como están clasificadas en el análisis — respeta esa misma clasificación aquí, no la cambies (una decisión importante-no-bloqueante se presenta con su hipótesis provisional, no como algo que "debe consultarse antes de continuar"), y los siguientes pasos razonables.
-   Estos documentos son un punto de partida útil, no un requisito rígido — dilo de forma natural si aporta, pero no lo repitas como advertencia en cada campo.
 
 Responde EXCLUSIVAMENTE con un objeto JSON válido (sin markdown, sin texto antes o después) con exactamente esta forma:
 
@@ -92,11 +89,23 @@ Responde EXCLUSIVAMENTE con un objeto JSON válido (sin markdown, sin texto ante
   },
   "claude_code_workspace": null | {
     "offer_message": string,
-    "suggested_folder_name": string,
-    "claude_md_content": string,
-    "todo_md_content": string
+    "suggested_folder_name": string
   }
 }`;
+
+const WORKSPACE_SYSTEM_PROMPT = `Eres un ingeniero de requisitos experto. Recibirás el análisis ya hecho de una petición de software (objetivo, rol, restricciones, decisiones, etc. en formato JSON) y debes generar el contenido completo de dos archivos para que el usuario los guarde en su proyecto antes de abrir Claude Code.
+
+Responde EXCLUSIVAMENTE con un objeto JSON válido (sin markdown, sin texto antes o después) con esta forma:
+
+{
+  "claude_md_content": string,
+  "todo_md_content": string
+}
+
+- "claude_md_content": el contenido completo y listo para usar de un archivo CLAUDE.md — instrucciones persistentes para que cualquier sesión futura de Claude Code entienda el proyecto sin depender de esta conversación: qué es el proyecto, reglas fijas que no debe romper, cómo ejecutar y verificar, cómo actualizar la documentación. Basado en el análisis recibido (rol, objetivo, restricciones, decisiones tomadas e hipótesis asumidas), no genérico.
+- "todo_md_content": el contenido completo de un archivo TODO.md con el trabajo pendiente estructurado: qué construir primero (basado en "claude_code.what_to_build" y las prioridades del análisis), y las decisiones pendientes (bloqueantes e importantes-no-bloqueantes) tal como están clasificadas en el análisis recibido — respeta esa misma clasificación, no la cambies (una decisión importante-no-bloqueante se presenta con su hipótesis provisional, no como algo que "debe consultarse antes de continuar"), y los siguientes pasos razonables.
+
+Escribe en el mismo idioma que el resto del análisis recibido. Sé concreto y específico del proyecto real, nunca genérico.`;
 
 export class DeepSeekError extends Error {}
 
@@ -179,24 +188,20 @@ async function callDeepSeekOnce(
   }
 }
 
-export async function generateStructuredPrompt(
-  config: DeepSeekConfig,
-  userRequest: string,
-  answers?: QuestionAnswer[]
-): Promise<StructuredPrompt> {
-  const client = new OpenAI({ apiKey: config.apiKey, baseURL: config.baseURL });
-  const userMessage = buildUserMessage(userRequest, answers);
-
+/**
+ * Reintento único genérico: la respuesta a veces llega truncada o mal formada
+ * por una generación puntualmente defectuosa del modelo, no por un problema
+ * de la petición del usuario.
+ */
+async function withSingleRetry<T>(attempt: () => Promise<T>): Promise<T> {
   try {
-    return await callDeepSeekOnce(client, config, userMessage);
+    return await attempt();
   } catch (err) {
     if (!(err instanceof MalformedResponseError)) {
       throw err;
     }
-    // Reintento único: la respuesta a veces llega truncada o mal formada por una generación
-    // puntualmente defectuosa del modelo, no por un problema de la petición del usuario.
     try {
-      return await callDeepSeekOnce(client, config, userMessage);
+      return await attempt();
     } catch (retryErr) {
       if (retryErr instanceof MalformedResponseError) {
         throw new DeepSeekError(retryErr.message);
@@ -204,4 +209,77 @@ export async function generateStructuredPrompt(
       throw retryErr;
     }
   }
+}
+
+export async function generateStructuredPrompt(
+  config: DeepSeekConfig,
+  userRequest: string,
+  answers?: QuestionAnswer[]
+): Promise<StructuredPrompt> {
+  const client = new OpenAI({ apiKey: config.apiKey, baseURL: config.baseURL });
+  const userMessage = buildUserMessage(userRequest, answers);
+  return withSingleRetry(() => callDeepSeekOnce(client, config, userMessage));
+}
+
+function isClaudeCodeWorkspaceContent(value: unknown): value is ClaudeCodeWorkspace {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as ClaudeCodeWorkspace;
+  return (
+    typeof v.claude_md_content === "string" &&
+    v.claude_md_content.trim() !== "" &&
+    typeof v.todo_md_content === "string" &&
+    v.todo_md_content.trim() !== ""
+  );
+}
+
+async function callWorkspaceOnce(
+  client: OpenAI,
+  config: DeepSeekConfig,
+  analysisJson: string
+): Promise<ClaudeCodeWorkspace> {
+  let completion;
+  try {
+    completion = await client.chat.completions.create({
+      model: config.model,
+      messages: [
+        { role: "system", content: WORKSPACE_SYSTEM_PROMPT },
+        { role: "user", content: analysisJson },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3,
+      max_tokens: 8192,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new DeepSeekError(`Error llamando a la API de DeepSeek: ${message}`);
+  }
+
+  const raw = completion.choices[0]?.message?.content;
+  if (!raw) {
+    throw new MalformedResponseError("La respuesta de DeepSeek no contiene contenido.");
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new MalformedResponseError(
+      `La respuesta de DeepSeek no es JSON válido (finish_reason: ${completion.choices[0]?.finish_reason ?? "desconocido"}).`
+    );
+  }
+
+  if (!isClaudeCodeWorkspaceContent(parsed)) {
+    throw new MalformedResponseError("La respuesta de DeepSeek no cumple el esquema esperado para el workspace.");
+  }
+
+  return parsed;
+}
+
+export async function generateClaudeCodeWorkspace(
+  config: DeepSeekConfig,
+  analysis: StructuredPrompt
+): Promise<ClaudeCodeWorkspace> {
+  const client = new OpenAI({ apiKey: config.apiKey, baseURL: config.baseURL });
+  const analysisJson = JSON.stringify(analysis);
+  return withSingleRetry(() => callWorkspaceOnce(client, config, analysisJson));
 }

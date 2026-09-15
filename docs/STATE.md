@@ -185,9 +185,25 @@ El usuario, revisando el caso real de AzerothCore, detectó que la sección de C
 
 Verificado: `npm run typecheck`, `npm test` (15/15) y `npm run build` sin errores.
 
+## v0.12.0 — Separar la generación del workspace + indicador de progreso
+
+Continuación del diagnóstico de lentitud de v0.11.0. Dos cambios, medidos con la misma petición pesada (software con Claude Code) contra una instancia aislada de depuración (puerto 3098, sin tocar el servidor del usuario):
+
+**1. `claude_code_workspace` en una llamada separada.** Antes, `generateStructuredPrompt()` generaba siempre el contenido íntegro de CLAUDE.md/TODO.md junto con el resto del análisis, aunque el usuario acabara respondiendo "No, solo el prompt". Ahora:
+- La llamada principal (`server/deepseek.ts`, `SYSTEM_PROMPT`) solo pide la oferta breve (`offer_message` + `suggested_folder_name`) — el tipo `ClaudeCodeWorkspaceOfferInfo`, ya no `ClaudeCodeWorkspace` completo.
+- Nueva función `generateClaudeCodeWorkspace()` con su propio system prompt (`WORKSPACE_SYSTEM_PROMPT`), llamada solo cuando el usuario pulsa "Sí, prepáralo", vía el nuevo endpoint `POST /api/generate-workspace` (recibe `userRequest` + el `result` ya obtenido, sin recalcular nada).
+- El mecanismo de reintento único (de v0.4.1) se extrajo a una función genérica `withSingleRetry()` para no duplicar la lógica entre ambas llamadas.
+- `server/schema.ts`: `isClaudeCodeWorkspaceOfferInfo()` sustituye a la validación anterior (ya no exige `claude_md_content`/`todo_md_content` en la respuesta principal); nueva validación ligera para la respuesta de la segunda llamada.
+
+**Medido:** llamada principal ahora ~62s (antes ~68s con todo junto) y genera una respuesta de ~15.7KB (antes ~22.5KB) — mejora real pero moderada, porque gran parte del tiempo no es generación de tokens de salida sino el razonamiento del modelo antes de escribir (`temperature: 0.3`, system prompt largo con reglas de coherencia). La llamada de workspace por separado tarda ~36s. En el caso de responder "No" (probablemente el más frecuente mientras se prueba la app), el ahorro es real (~6s menos, respuesta más ligera); en el caso de responder "Sí", el total combinado (~98s) es similar a antes, pero ahora el usuario ve el análisis principal a los 62s en vez de esperar a que todo esté listo a la vez.
+
+**2. Indicador de progreso.** Nuevo componente `ElapsedTimer.tsx` (contador de segundos transcurridos, sin dependencias), usado en `RequestInput.tsx` (llamada principal, con aviso de "puede tardar 1-2 minutos") y en `ClaudeCodeWorkspaceOffer.tsx` (llamada de workspace). Sustituye la pantalla en blanco silenciosa anterior.
+
+Verificado: `npm run typecheck`, `npm test` (16/16, se añadieron 2 tests para el nuevo `ClaudeCodeWorkspaceOfferInfo`) y `npm run build` sin errores. Verificado con llamadas reales que ambos endpoints devuelven contenido de buena calidad y específico del proyecto.
+
 ## Pendiente / no hecho todavía
 
-- **Lentitud de la respuesta (68s en el caso más pesado):** no resuelto todavía, solo mitigado preventivamente. Opciones evaluadas con el usuario pendientes de decidir: mostrar progreso/streaming en vez de pantalla en blanco; generar `claude_code_workspace` en una segunda llamada más pequeña solo cuando el usuario confirma que lo quiere (en vez de siempre, aunque tarde en responder Sí/No); o medir si otro modelo (`deepseek-v4-pro`, ya configurado en `.env` pendiente de que el usuario reinicie `npm run dev` para probarlo) cambia el tiempo sin perder calidad.
+- **La lentitud sigue sin resolverse del todo:** el cuello de botella real no es solo el volumen de tokens de salida, sino el tiempo de razonamiento del modelo. Pendiente de decidir con el usuario: medir `deepseek-v4-pro` (ya configurado en `.env`, pendiente de que el usuario reinicie `npm run dev` para probarlo) frente a `deepseek-flash`; considerar si el streaming de la respuesta (pintar el texto según llega, en vez de esperar el JSON completo) merece la pena dado que la respuesta es un único objeto JSON que no se puede parsear hasta estar completo.
 - Entrega del entorno de trabajo de Claude Code solo por copiar/pegar archivo a archivo — no genera un .zip descargable ni escribe directamente al disco (la app no tiene acceso al sistema de archivos del usuario). Aceptado conscientemente para esta versión; podría mejorarse más adelante si aporta valor suficiente.
 
 - Botón para borrar la petición actual y empezar una consulta nueva, cerca del campo de entrada de texto. Pedido por el usuario, no implementado todavía.

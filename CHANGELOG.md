@@ -4,6 +4,12 @@ Aquí se explica, en lenguaje sencillo, qué ha cambiado en cada versión de la 
 
 El número de versión tiene tres partes (por ejemplo 0.2.0): la primera cambia cuando hay un cambio muy grande, la segunda cuando se añade algo nuevo o se mejora algo existente, y la tercera cuando se corrige un error pequeño.
 
+## [0.12.0] - 2026-09-15
+
+### Cambiado
+- Cuando la aplicación recomienda Claude Code, ya no genera siempre el contenido completo de CLAUDE.md y TODO.md dentro de la misma llamada (aunque luego respondas "No, solo el prompt"). Ahora ese contenido solo se genera cuando pulsas "Sí, prepáralo", en una segunda llamada más pequeña — la primera respuesta llega algo más rápido en el caso más común.
+- Mientras la aplicación está generando el prompt (o el entorno de trabajo de Claude Code), ahora se ve un contador con el tiempo transcurrido y un aviso de que puede tardar 1-2 minutos, en vez de una pantalla sin ninguna indicación.
+
 ## [0.11.0] - 2026-09-15
 
 ### Añadido

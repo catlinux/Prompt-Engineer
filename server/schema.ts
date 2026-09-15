@@ -3,7 +3,7 @@ import type {
   AiToolPick,
   AiToolRecommendationResult,
   ClaudeCodeSection,
-  ClaudeCodeWorkspace,
+  ClaudeCodeWorkspaceOfferInfo,
   ContentCategory,
   DeferrableDecision,
   DetectedTask,
@@ -205,18 +205,14 @@ function findDuplicateDecisionTopic(v: Record<string, unknown>): string | null {
   return null;
 }
 
-function isClaudeCodeWorkspace(value: unknown): value is ClaudeCodeWorkspace {
+function isClaudeCodeWorkspaceOfferInfo(value: unknown): value is ClaudeCodeWorkspaceOfferInfo {
   if (typeof value !== "object" || value === null) return false;
-  const v = value as ClaudeCodeWorkspace;
+  const v = value as ClaudeCodeWorkspaceOfferInfo;
   return (
     typeof v.offer_message === "string" &&
     v.offer_message.trim() !== "" &&
     typeof v.suggested_folder_name === "string" &&
-    v.suggested_folder_name.trim() !== "" &&
-    typeof v.claude_md_content === "string" &&
-    v.claude_md_content.trim() !== "" &&
-    typeof v.todo_md_content === "string" &&
-    v.todo_md_content.trim() !== ""
+    v.suggested_folder_name.trim() !== ""
   );
 }
 
@@ -289,7 +285,7 @@ export function validateStructuredPrompt(value: unknown, validToolIds: Set<strin
   if (v.is_software_request === true && v.claude_code === null) {
     throw new SchemaValidationError("'claude_code' no puede ser null cuando 'is_software_request' es true.");
   }
-  if (v.claude_code_workspace !== null && !isClaudeCodeWorkspace(v.claude_code_workspace)) {
+  if (v.claude_code_workspace !== null && !isClaudeCodeWorkspaceOfferInfo(v.claude_code_workspace)) {
     throw new SchemaValidationError("El campo 'claude_code_workspace' tiene un formato inválido.");
   }
   const primaryToolId = (v.ai_tool_recommendation as AiToolRecommendationResult | null)?.primary?.tool_id;

@@ -93,3 +93,13 @@ Tras v0.10.0, `claude_code.decision_references` podía referenciar temas de `nec
 Se restringió `decision_references` a solo `necessary_decisions` e `important_pending_decisions` — las dos únicas categorías que representan algo genuinamente pendiente. Una recomendación que Claude Code deba aplicar se expresa en `persistent_instructions` con su propio texto, no como referencia a una decisión. El validador (`collectPendingDecisionTopics()` en `server/schema.ts`) hace cumplir esto rechazando cualquier referencia a un topic que solo exista en `recommendations` o `deferrable_decisions`.
 
 No se tocó el mecanismo de detección de duplicados entre categorías (`findDuplicateDecisionTopic`, de v0.10.0), que sigue funcionando igual — este cambio es ortogonal: resuelve un problema distinto (qué categorías son válidas como referencia para Claude Code, no si dos categorías se contradicen entre sí).
+
+## Generar `claude_code_workspace` en una llamada separada, bajo demanda (v0.12.0)
+
+El usuario reportó que la aplicación tardaba mucho (68s medidos) y preguntó qué se podía hacer sin cambiar de modelo. Medido el desglose: la llamada principal generaba siempre el contenido íntegro de CLAUDE.md/TODO.md (varios KB de texto) junto con el resto del análisis, **aunque el usuario acabara respondiendo "No, solo el prompt"** — el caso probablemente más frecuente al estar solo probando la aplicación.
+
+Se consideraron dos cambios independientes y se implementaron ambos (decisión del usuario): separar la generación del workspace en una segunda llamada disparada solo al confirmar "Sí, prepáralo" (`POST /api/generate-workspace`, función `generateClaudeCodeWorkspace()`), y añadir un indicador de progreso con tiempo transcurrido en vez de pantalla en blanco (`ElapsedTimer.tsx`).
+
+Medido el resultado: la llamada principal bajó de ~68s a ~62s y de ~22.5KB a ~15.7KB de respuesta — mejora real pero moderada. La causa es que gran parte del tiempo de espera no es tiempo de generación de tokens de salida, sino tiempo de razonamiento del modelo antes de empezar a escribir (con `temperature: 0.3` y un system prompt largo cargado de reglas de coherencia). Reducir el volumen de salida ayuda pero no resuelve el cuello de botella de fondo — eso queda documentado como pendiente en STATE.md, a explorar con otro modelo o con streaming.
+
+Se prefirió reenviar el `result` completo ya obtenido por el frontend en la segunda llamada (en vez de que el backend intente reconstruir o recalcular un subconjunto "suficiente" de contexto) — es más simple, no requiere mantener sincronizados dos modelos de qué campos hacen falta, y el coste de transferencia (unos pocos KB) es insignificante comparado con el tiempo de generación del modelo.

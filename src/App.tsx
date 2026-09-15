@@ -57,6 +57,7 @@ export default function App() {
 
       {response && (
         <StructuredPromptView
+          userRequest={userRequest}
           result={response.result}
           model={response.model}
           toolCatalog={response.toolCatalog}

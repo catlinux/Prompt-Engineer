@@ -207,6 +207,23 @@ test("contradicción 'puede decidir' vs 'debe consultar': se detecta y se rechaz
   assert.throws(() => validateStructuredPrompt(input, VALID_TOOL_IDS), SchemaValidationError);
 });
 
+test("acepta claude_code_workspace solo con offer_message + suggested_folder_name cuando primary es claude_code", () => {
+  const input = baseValidPrompt({
+    ai_tool_recommendation: {
+      task_breakdown: [],
+      primary: { tool_id: "claude_code", purpose: "Construir el proyecto.", reason: "Es un agente autónomo." },
+      complementary: [],
+      alternatives: [],
+    },
+    claude_code_workspace: {
+      offer_message: "¿Preparamos el entorno?",
+      suggested_folder_name: "proyecto",
+    },
+  });
+  const result = validateStructuredPrompt(input, VALID_TOOL_IDS);
+  assert.equal(result.claude_code_workspace?.suggested_folder_name, "proyecto");
+});
+
 test("rechaza claude_code_workspace presente cuando la herramienta principal no es claude_code", () => {
   const input = baseValidPrompt({
     ai_tool_recommendation: {
@@ -218,8 +235,6 @@ test("rechaza claude_code_workspace presente cuando la herramienta principal no 
     claude_code_workspace: {
       offer_message: "¿Preparamos el entorno?",
       suggested_folder_name: "proyecto",
-      claude_md_content: "# Proyecto",
-      todo_md_content: "# TODO",
     },
   });
   assert.throws(() => validateStructuredPrompt(input, VALID_TOOL_IDS), SchemaValidationError);

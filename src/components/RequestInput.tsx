@@ -1,3 +1,5 @@
+import { ElapsedTimer } from "./ElapsedTimer";
+
 interface RequestInputProps {
   value: string;
   onChange: (value: string) => void;
@@ -27,10 +29,19 @@ export function RequestInput({ value, onChange, onSubmit, loading }: RequestInpu
       />
       <div className="request-input__footer">
         <span className="request-input__count">{value.length}/4000</span>
-        <button type="button" onClick={onSubmit} disabled={loading || value.trim().length === 0}>
-          {loading ? "Generando…" : "Generar prompt"}
-        </button>
+        <div className="request-input__submit">
+          {loading && <ElapsedTimer active={loading} />}
+          <button type="button" onClick={onSubmit} disabled={loading || value.trim().length === 0}>
+            {loading ? "Generando…" : "Generar prompt"}
+          </button>
+        </div>
       </div>
+      {loading && (
+        <p className="request-input__loading-hint">
+          Puede tardar hasta 1-2 minutos: la IA analiza la petición, detecta decisiones pendientes y prepara el
+          prompt completo en una sola pasada.
+        </p>
+      )}
     </div>
   );
 }
