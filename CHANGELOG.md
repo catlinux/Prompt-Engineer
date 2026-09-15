@@ -4,6 +4,12 @@ Aquí se explica, en lenguaje sencillo, qué ha cambiado en cada versión de la 
 
 El número de versión tiene tres partes (por ejemplo 0.2.0): la primera cambia cuando hay un cambio muy grande, la segunda cuando se añade algo nuevo o se mejora algo existente, y la tercera cuando se corrige un error pequeño.
 
+## [0.10.1] - 2026-09-15
+
+### Cambiado
+- Las etiquetas "IA complementaria" y "Alternativas" ahora dejan claro qué significan: una IA complementaria se usa junto a la principal (para otra parte del trabajo), mientras que una alternativa la sustituye por completo. Antes podían confundirse.
+- Cuando la aplicación pregunta si quieres que prepare el entorno de trabajo para Claude Code, ya no muestra el resto del análisis debajo mientras esperas a responder — así la pregunta no queda enterrada entre más contenido. En cuanto respondes (sí o no), el resto de la pantalla aparece con normalidad.
+
 ## [0.10.0] - 2026-09-15
 
 ### Corregido

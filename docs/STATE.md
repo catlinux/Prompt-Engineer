@@ -152,6 +152,16 @@ Si el validador detecta cualquiera de las dos incoherencias, la respuesta se rec
 
 **Verificado con el caso real que dio el usuario** (mod de torneo con jefes gemelos en AzerothCore, con la petición explícita de buscar documentación): "Zona exacta del mapa y ubicación del evento" aparece una sola vez, clasificada en `important_pending_decisions` con hipótesis provisional y `what_could_change` claro; `claude_code.decision_references` solo apunta a ese mismo texto, sin redactarlo de nuevo ni contradecirlo. Verificado programáticamente sobre 3 llamadas reales: 0 duplicados entre categorías, 0 referencias inválidas en `decision_references`. Verificado sin regresión: petición no-software sigue con `claude_code: null`; `ai_tool_recommendation` y `claude_code_workspace` siguen funcionando exactamente igual que antes (no se tocó esa lógica, tal como pidió el usuario).
 
+## v0.10.1 — Claridad de etiquetas y foco en la pregunta de Claude Code
+
+El usuario, probando un caso real (mod de AzerothCore recomendando Claude Code), señaló dos problemas de interfaz — analizados antes de asumir que tenía razón:
+
+1. **"IA complementaria" vs "Alternativas":** se revisó la definición real en el system prompt (regla 9.d/9.e de `server/deepseek.ts`) y se confirmó con datos reales que la lógica ya era correcta: `complementary` son herramientas que trabajan *junto a* la principal para partes distintas del trabajo (ej. Claude.ai para diseño mientras Claude Code construye), y `alternatives` son herramientas que la *sustituirían* haciendo el mismo papel (ej. DeepSeek en vez de Claude Code). No eran lo mismo, así que no había que fusionarlas ni convertir "complementaria" en "alternativa a no usar Claude Code" — el problema era que las etiquetas de la UI no comunicaban esa diferencia. Se cambiaron a "IA complementaria (se usa junto a la principal, para otra parte del trabajo)" y "Alternativas a la IA principal (en vez de ella, no además)" en `SuggestedToolCard.tsx`.
+
+2. **Foco en la pregunta de Claude Code:** cuando aparece `claude_code_workspace`, toda la demás información (rol, objetivo, decisiones, prompt final...) se mostraba igualmente debajo de la pregunta "¿Preparamos el entorno de trabajo?", enterrándola entre contenido. Se subió el estado de la elección (`pending`/`yes`/`no`) de `ClaudeCodeWorkspaceOffer` a `StructuredPromptView` (ahora controlado por props `choice`/`onChoice`), y se envuelve todo el contenido posterior en un condicional que no renderiza nada mientras la elección esté `pending`. En cuanto se responde (sí o no), el resto de la pantalla vuelve a aparecer con normalidad.
+
+Verificado: `npm run typecheck`, `npm test` (6/6) y `npm run build` sin errores tras el cambio.
+
 ## Pendiente / no hecho todavía
 
 - Entrega del entorno de trabajo de Claude Code solo por copiar/pegar archivo a archivo — no genera un .zip descargable ni escribe directamente al disco (la app no tiene acceso al sistema de archivos del usuario). Aceptado conscientemente para esta versión; podría mejorarse más adelante si aporta valor suficiente.

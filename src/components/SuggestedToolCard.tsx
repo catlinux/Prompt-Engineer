@@ -68,12 +68,17 @@ export function SuggestedToolCard({ recommendation, catalog, updatedAt }: Sugges
       <ToolPickBlock pick={recommendation.primary} catalog={catalog} label="IA principal recomendada" />
 
       {recommendation.complementary.map((pick, i) => (
-        <ToolPickBlock key={i} pick={pick} catalog={catalog} label="IA complementaria" />
+        <ToolPickBlock
+          key={i}
+          pick={pick}
+          catalog={catalog}
+          label="IA complementaria (se usa junto a la principal, para otra parte del trabajo)"
+        />
       ))}
 
       {recommendation.alternatives.length > 0 && (
         <div className="tool-alternatives">
-          <p className="tool-pick__label">Alternativas</p>
+          <p className="tool-pick__label">Alternativas a la IA principal (en vez de ella, no además)</p>
           <ul>
             {recommendation.alternatives.map((alt, i) => {
               const tool = catalog[alt.tool_id];

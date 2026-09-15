@@ -1,24 +1,25 @@
-import { useState } from "react";
 import type { ClaudeCodeWorkspace } from "../types";
 import { CopyButton } from "./CopyButton";
 
+export type WorkspaceChoice = "pending" | "yes" | "no";
+
 interface ClaudeCodeWorkspaceOfferProps {
   workspace: ClaudeCodeWorkspace;
+  choice: WorkspaceChoice;
+  onChoice: (choice: WorkspaceChoice) => void;
 }
 
-export function ClaudeCodeWorkspaceOffer({ workspace }: ClaudeCodeWorkspaceOfferProps) {
-  const [choice, setChoice] = useState<"pending" | "yes" | "no">("pending");
-
+export function ClaudeCodeWorkspaceOffer({ workspace, choice, onChoice }: ClaudeCodeWorkspaceOfferProps) {
   if (choice === "pending") {
     return (
       <section className="section claude-code-offer">
         <h3>¿Preparamos el entorno de trabajo?</h3>
         <p>{workspace.offer_message}</p>
         <div className="claude-code-offer__actions">
-          <button type="button" onClick={() => setChoice("yes")}>
+          <button type="button" onClick={() => onChoice("yes")}>
             Sí, prepáralo
           </button>
-          <button type="button" className="claude-code-offer__no" onClick={() => setChoice("no")}>
+          <button type="button" className="claude-code-offer__no" onClick={() => onChoice("no")}>
             No, solo el prompt
           </button>
         </div>
