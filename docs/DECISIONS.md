@@ -43,3 +43,9 @@ El usuario pidió que la app recomendara qué IA usar según la tarea, con datos
 Se optó por: datos curados en `config/ai_recommendations.json`, actualizados a mano por un agente con búsqueda web (Claude Code) cuando el usuario lo pide, siguiendo un procedimiento documentado (`docs/ACTUALIZAR_RECOMENDACIONES_IA.md`). El backend elige qué herramienta recomendar con una regla determinista simple (sin IA), no con una nueva llamada a DeepSeek.
 
 Limitación aceptada conscientemente: quien use el proyecto sin un agente con búsqueda web no puede refrescar estos datos, quedan congelados en la fecha del último `git push`. El usuario decidió aceptar esta limitación en lugar de añadir complejidad/coste, dejándolo como mejora futura.
+
+## Catálogo de IA por categoría de contenido, no solo software/texto (v0.6.0)
+
+La primera versión de la recomendación de IA (v0.5.0) solo distinguía software (→ Claude) de todo lo demás (→ ChatGPT), desaprovechando que la IA cubre muchos más tipos de tarea: imagen, vídeo, música, resúmenes de documentos propios, transcripción, investigación profunda. El usuario lo señaló explícitamente pidiendo aprovechar mejor el potencial de la herramienta.
+
+Se añadió `content_category` al modelo de datos, clasificado por DeepSeek en la misma llamada (sin coste extra), y se amplió `config/ai_recommendations.json` con herramientas especializadas por categoría (Leonardo AI, Kling AI, Suno, NotebookLM, Otter.ai), investigadas con búsqueda web real, no inventadas. La selección en el backend sigue siendo determinista y sin IA (`server/aiRecommendations.ts`), solo que ahora busca por categoría en vez de por una regla binaria.

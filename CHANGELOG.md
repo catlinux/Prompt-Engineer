@@ -4,6 +4,12 @@ Aquí se explica, en lenguaje sencillo, qué ha cambiado en cada versión de la 
 
 El número de versión tiene tres partes (por ejemplo 0.2.0): la primera cambia cuando hay un cambio muy grande, la segunda cuando se añade algo nuevo o se mejora algo existente, y la tercera cuando se corrige un error pequeño.
 
+## [0.6.0] - 2026-09-15
+
+### Añadido
+- La recomendación de IA ya no se limita a "Claude o ChatGPT": ahora la aplicación reconoce 8 tipos de petición (texto, código/software, imagen, vídeo, música, resumen de documentos propios, transcripción de audio, investigación profunda) y recomienda la herramienta gratuita más adecuada para cada una: Leonardo AI para imágenes, Kling AI para vídeo, Suno para música, NotebookLM para resúmenes e investigación, Otter.ai para transcripción, además de Claude/ChatGPT/Gemini para texto y código.
+- Tabla completa con todas las herramientas, categorías y límites en [docs/RECOMENDACIONES_IA.md](docs/RECOMENDACIONES_IA.md).
+
 ## [0.5.0] - 2026-09-15
 
 ### Añadido

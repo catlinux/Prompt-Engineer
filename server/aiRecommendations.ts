@@ -14,21 +14,18 @@ function loadData(): AiRecommendationsData {
 }
 
 /**
- * Selección determinista, sin IA: solo mira si la petición es de software
- * y si hay un rol profesional definido, para elegir la herramienta más
- * adecuada de la lista curada. No es una regla exhaustiva, es un punto
- * de partida razonable.
+ * Selección determinista, sin IA: busca en el catálogo curado la primera
+ * herramienta que cubra la categoría de contenido detectada por DeepSeek.
+ * No es una regla exhaustiva, es un punto de partida razonable.
  */
 export function pickRecommendedTool(result: StructuredPrompt): AiToolRecommendation | null {
   const data = loadData();
   if (data.tools.length === 0) return null;
 
-  if (result.is_software_request) {
-    const claudeTool = data.tools.find((t) => t.id === "claude");
-    if (claudeTool) return claudeTool;
-  }
+  const match = data.tools.find((t) => t.categories.includes(result.content_category));
+  if (match) return match;
 
-  return data.tools.find((t) => t.id === "chatgpt") ?? data.tools[0];
+  return data.tools.find((t) => t.categories.includes("texto_general")) ?? data.tools[0];
 }
 
 export function getRecommendationsUpdatedAt(): string {

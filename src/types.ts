@@ -36,8 +36,19 @@ export interface ClaudeCodeSection {
   how_to_update_documentation: string;
 }
 
+export type ContentCategory =
+  | "texto_general"
+  | "codigo_software"
+  | "imagen"
+  | "video"
+  | "musica"
+  | "resumen_documentos"
+  | "transcripcion_audio"
+  | "investigacion_profunda";
+
 export interface StructuredPrompt {
   is_software_request: boolean;
+  content_category: ContentCategory;
   role: ProfessionalRole | null;
   objective: string;
   context: string | null;
@@ -65,6 +76,7 @@ export interface GeneratePromptRequest {
 export interface AiToolRecommendation {
   id: string;
   name: string;
+  categories: ContentCategory[];
   has_free_tier: boolean;
   free_tier_summary: string;
   free_tier_limitations: string;

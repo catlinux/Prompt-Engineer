@@ -68,6 +68,16 @@ Investigación real (búsqueda web) de límites y versión gratuita de Claude.ai
 
 **Limitación aceptada conscientemente:** quien descargue el proyecto sin un agente con búsqueda web no puede refrescar estos datos — se quedan congelados en la fecha del último `git push`. El usuario decidió aceptar esta limitación para esta versión en lugar de añadir una API de búsqueda de pago al backend. Ver [DECISIONS.md](DECISIONS.md).
 
+## v0.6.0 — Catálogo de IA ampliado a 8 categorías
+
+El usuario señaló que limitar la recomendación a "software o texto general" desaprovechaba el potencial real: la IA sirve para imagen, vídeo, música, resúmenes de documentos, transcripción, investigación, etc. Se investigó (búsqueda web real) cada categoría y se amplió el catálogo.
+
+**Cambio de modelo:** `StructuredPrompt` ahora incluye `content_category` (8 valores posibles, ver `src/types.ts`), que DeepSeek clasifica en la misma llamada que ya hace el análisis (sin coste extra de llamadas). `server/aiRecommendations.ts` elige la herramienta cuyo `categories` incluya la categoría detectada, en vez de la regla binaria anterior (software → Claude, resto → ChatGPT).
+
+**Catálogo añadido:** Leonardo AI (imagen), Kling AI (vídeo), Suno (música), NotebookLM (resumen de documentos e investigación profunda), Otter.ai (transcripción de audio) — datos investigados el 2026-09-15, ver [docs/RECOMENDACIONES_IA.md](RECOMENDACIONES_IA.md).
+
+Verificado con llamadas reales para las tres categorías nuevas más comprobación de que código/software sigue recomendando Claude.ai sin regresión: imagen → Leonardo AI, música → Suno, resumen de documentos → NotebookLM, código → Claude.ai. Los cuatro casos clasificaron `content_category` correctamente y sugirieron la herramienta esperada.
+
 Verificado con llamada real: petición de software → recomienda Claude.ai; petición no-software → recomienda ChatGPT; `recommendationsUpdatedAt` se sirve correctamente.
 
 ## Pendiente / no hecho todavía

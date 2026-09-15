@@ -12,9 +12,13 @@ Esta aplicación sugiere qué IA conviene usar para cada prompt generado, con in
 - Cuando el usuario lo pida directamente ("actualiza las recomendaciones de IA").
 - Cuando la aplicación muestre el aviso de que los datos tienen más de 7 días (aparece en pantalla junto a la recomendación).
 
+## Categorías actuales
+
+`texto_general`, `codigo_software`, `imagen`, `video`, `musica`, `resumen_documentos`, `transcripcion_audio`, `investigacion_profunda`. Cada herramienta del catálogo pertenece a una o más de estas categorías (`categories` en el JSON).
+
 ## Pasos para actualizar (para el agente que lo ejecute)
 
-1. Para cada herramienta ya presente en `config/ai_recommendations.json` (y cualquier otra relevante que haya aparecido desde la última actualización — por ejemplo una IA nueva con uso extendido), buscar en la web información **actual**: si tiene versión gratuita, qué incluye exactamente, límites de mensajes/tokens/peticiones, y qué modelo se usa en el plan gratuito.
+1. Para cada herramienta ya presente en `config/ai_recommendations.json` (y cualquier otra relevante que haya aparecido desde la última actualización — por ejemplo una IA nueva con uso extendido, o una categoría nueva que el usuario pida cubrir), buscar en la web información **actual**: si tiene versión gratuita, qué incluye exactamente, límites de mensajes/tokens/peticiones, y qué modelo se usa en el plan gratuito.
 2. Verificar cada dato con al menos una fuente que parezca fiable (documentación oficial, o varias fuentes de terceros que coincidan). No inventar cifras ni asumir que no ha cambiado nada solo porque no se ha encontrado la fuente.
 3. Actualizar `config/ai_recommendations.json`:
    - Cambiar `updated_at` a la fecha de hoy (formato `AAAA-MM-DD`).

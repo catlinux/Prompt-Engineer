@@ -1,11 +1,27 @@
 import type {
   ClaudeCodeSection,
+  ContentCategory,
   DeferrableDecision,
   NecessaryDecision,
   ProfessionalRole,
   Recommendation,
   StructuredPrompt,
 } from "../src/types.js";
+
+const CONTENT_CATEGORIES: ContentCategory[] = [
+  "texto_general",
+  "codigo_software",
+  "imagen",
+  "video",
+  "musica",
+  "resumen_documentos",
+  "transcripcion_audio",
+  "investigacion_profunda",
+];
+
+function isContentCategory(value: unknown): value is ContentCategory {
+  return typeof value === "string" && (CONTENT_CATEGORIES as string[]).includes(value);
+}
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
@@ -82,6 +98,9 @@ export function validateStructuredPrompt(value: unknown): StructuredPrompt {
 
   if (typeof v.is_software_request !== "boolean") {
     throw new SchemaValidationError("Falta el campo 'is_software_request' (boolean).");
+  }
+  if (!isContentCategory(v.content_category)) {
+    throw new SchemaValidationError("El campo 'content_category' tiene un valor inválido o falta.");
   }
   if (v.role !== null && !isProfessionalRole(v.role)) {
     throw new SchemaValidationError("El campo 'role' debe ser null o un objeto {role, behaviors[]} válido.");

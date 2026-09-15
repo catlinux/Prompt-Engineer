@@ -5,6 +5,7 @@
     {
       "id": "claude",
       "name": "Claude.ai (Anthropic)",
+      "categories": ["texto_general", "codigo_software"],
       "has_free_tier": true,
       "free_tier_summary": "Unas 30-100 respuestas al día según uso (cupo por tokens, no por mensajes, y se renueva de forma continua cada 5 horas). Incluye el modelo Sonnet, búsqueda web, Artifacts y subida de archivos.",
       "free_tier_limitations": "No incluye Opus, Claude Code ni el modo de investigación en la versión gratuita.",
@@ -14,6 +15,7 @@
     {
       "id": "chatgpt",
       "name": "ChatGPT (OpenAI)",
+      "categories": ["texto_general"],
       "has_free_tier": true,
       "free_tier_summary": "Chats de texto ilimitados desde agosto de 2026. Limitado a un único modelo (el más pequeño de la familia GPT-5.6) y a un solo modo de razonamiento.",
       "free_tier_limitations": "Sin acceso a los modelos más potentes de OpenAI ni a límites ampliados de generación de imágenes/archivos.",
@@ -23,11 +25,62 @@
     {
       "id": "gemini",
       "name": "Gemini (Google AI Studio / API)",
+      "categories": ["texto_general"],
       "has_free_tier": true,
       "free_tier_summary": "Nivel gratuito sin tarjeta de crédito con los modelos de la familia Flash (no los Pro, que pasaron a ser de pago). Límite de 1500 peticiones/día y hasta 15-30 peticiones por minuto según el modelo.",
       "free_tier_limitations": "Los modelos Pro (más potentes) ya no están disponibles gratis. Google puede usar las conversaciones del nivel gratuito para mejorar sus productos.",
       "best_for": ["volumen alto de peticiones pequeñas", "integraciones vía API gratuita"],
       "recommended_when": "Se necesita hacer muchas llamadas pequeñas y automatizadas, y no hace falta el modelo más potente."
+    },
+    {
+      "id": "leonardo",
+      "name": "Leonardo AI",
+      "categories": ["imagen"],
+      "has_free_tier": true,
+      "free_tier_summary": "150 créditos gratis al día, aproximadamente 150 imágenes en ajustes estándar.",
+      "free_tier_limitations": "Calidad y velocidad por debajo de los planes de pago; algunos modelos y funciones avanzadas quedan fuera del plan gratuito.",
+      "best_for": ["generación de imágenes", "ilustraciones", "conceptos visuales"],
+      "recommended_when": "La petición pide crear una imagen, ilustración o concepto visual desde una descripción de texto."
+    },
+    {
+      "id": "kling",
+      "name": "Kling AI",
+      "categories": ["video"],
+      "has_free_tier": true,
+      "free_tier_summary": "66 créditos gratis al día, aproximadamente 2-6 vídeos cortos según duración y calidad.",
+      "free_tier_limitations": "Los vídeos del plan gratuito llevan marca de agua visible.",
+      "best_for": ["generación de vídeo corto", "animación de imágenes"],
+      "recommended_when": "La petición pide generar un vídeo corto a partir de texto o de una imagen."
+    },
+    {
+      "id": "suno",
+      "name": "Suno",
+      "categories": ["musica"],
+      "has_free_tier": true,
+      "free_tier_summary": "50 créditos gratis al día, aproximadamente 10 canciones completas, con acceso al modelo v4.5.",
+      "free_tier_limitations": "Las canciones del plan gratuito no se pueden descargar ni usar comercialmente.",
+      "best_for": ["composición musical", "canciones a partir de letra o descripción"],
+      "recommended_when": "La petición pide componer una canción o pieza musical a partir de una descripción o letra."
+    },
+    {
+      "id": "notebooklm",
+      "name": "NotebookLM (Google)",
+      "categories": ["resumen_documentos", "investigacion_profunda"],
+      "has_free_tier": true,
+      "free_tier_summary": "Gratis sin límite de tiempo: hasta 100 cuadernos, 50 fuentes por cuaderno y 50 preguntas al día. Incluye resúmenes en audio y vídeo (hasta 5 audios al día) y modo de investigación profunda.",
+      "free_tier_limitations": "El límite diario de preguntas y de resúmenes de audio puede quedarse corto si se analizan muchos documentos el mismo día.",
+      "best_for": ["resumir documentos propios", "sintetizar varias fuentes", "investigación a partir de material propio"],
+      "recommended_when": "La petición pide resumir, analizar o sacar conclusiones de documentos, PDFs o fuentes que el usuario ya tiene."
+    },
+    {
+      "id": "otter",
+      "name": "Otter.ai",
+      "categories": ["transcripcion_audio"],
+      "has_free_tier": true,
+      "free_tier_summary": "300 minutos de transcripción gratis al mes, pensado para reuniones, notas de voz y conversaciones grabadas.",
+      "free_tier_limitations": "300 minutos/mes puede quedarse corto para uso intensivo; funciones avanzadas de resumen y búsqueda limitadas en el plan gratuito.",
+      "best_for": ["transcribir reuniones", "notas de voz", "conversaciones grabadas"],
+      "recommended_when": "La petición pide transcribir audio, una reunión o una nota de voz a texto."
     }
   ]
 }
