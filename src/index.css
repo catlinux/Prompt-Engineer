@@ -208,6 +208,17 @@ button:disabled {
   margin-top: 2px;
 }
 
+.important-pending-section {
+  border-color: var(--accent);
+}
+
+.important-pending__change {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-style: italic;
+  margin-top: 2px;
+}
+
 .open-questions-form__hint {
   color: var(--muted);
   font-size: 0.85rem;

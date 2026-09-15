@@ -59,3 +59,13 @@ Se decidió que la propia IA (DeepSeek) hiciera este juicio, recibiendo el catá
 Se separó `claude_ai` de `claude_code` como entradas distintas del catálogo (con un campo `is_agentic`) y se añadió `deepseek` al catálogo, para que el sistema pueda recomendarse a sí mismo cuando corresponda y no tenga sesgo estructural hacia ningún proveedor.
 
 La recomendación de herramienta de IA (`ai_tool_recommendation`) se mantiene como campo separado de `recommendations` (que trata de cómo resolver el proyecto del usuario, no de qué herramienta ejecutar el trabajo) — nunca se mezclan ni una se convierte en requisito de la otra.
+
+## Categoría intermedia "importante pero no bloqueante" en las decisiones (v0.8.0)
+
+El modelo de dos categorías de v0.4.0 (`necessary_decisions` / `deferrable_decisions`) no distinguía bien entre "esto es importante" y "esto bloquea el trabajo": cualquier información moderadamente relevante tendía a clasificarse como bloqueante, obligando a responder antes de poder avanzar aunque fuera razonable continuar con una hipótesis.
+
+Se añadió `important_pending_decisions` como categoría intermedia: decisiones que pueden afectar significativamente el resultado pero no impiden avanzar. Cada una lleva una hipótesis provisional explícita (`provisional_approach`) y qué cambiaría si el usuario decide otra cosa (`what_could_change`), para que el análisis pueda continuar sin bloquear al usuario y sin ocultar que se ha asumido algo.
+
+Se estableció una regla de tres condiciones para clasificar algo como bloqueante (impide continuar con una parte esencial / no es razonable asumir una hipótesis / continuar sin ello podría causar trabajo inútil o difícil de revertir) — las tres deben cumplirse, no basta con que la información sea importante. También se añadió la noción de "bloqueo parcial": una decisión bloqueante debe indicar si solo bloquea una parte del proyecto, para no detener todo el análisis por algo que solo afecta a una fase concreta (ej. país/pagos de una tienda no bloquean el catálogo ni la arquitectura).
+
+Cambio deliberadamente acotado a la clasificación de decisiones — no se tocó la arquitectura de recomendación de herramientas de IA de v0.7.0, verificado sin regresión.

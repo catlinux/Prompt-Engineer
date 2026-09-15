@@ -4,6 +4,14 @@ Aquí se explica, en lenguaje sencillo, qué ha cambiado en cada versión de la 
 
 El número de versión tiene tres partes (por ejemplo 0.2.0): la primera cambia cuando hay un cambio muy grande, la segunda cuando se añade algo nuevo o se mejora algo existente, y la tercera cuando se corrige un error pequeño.
 
+## [0.8.0] - 2026-09-15
+
+### Cambiado
+- Antes, si una pregunta era importante, la aplicación la trataba como si tuvieras que responderla obligatoriamente antes de continuar. Ahora distingue mejor: solo te pide respuesta cuando de verdad es imprescindible para seguir. Si una decisión es importante pero se puede avanzar sin ella, la aplicación asume una hipótesis razonable, sigue trabajando, y te explica qué podría cambiar si más adelante decides otra cosa.
+- Nueva sección "Decisiones importantes pendientes" en la pantalla, separada de las preguntas que sí necesitan tu respuesta.
+- Cuando solo una parte del proyecto necesita una respuesta tuya (por ejemplo, los métodos de pago de una tienda), la aplicación ya no detiene todo el proyecto: lo indica claramente y sigue avanzando con el resto.
+- El prompt final ya no dice cosas como "debes responder esto antes de continuar" cuando en realidad se puede avanzar con una hipótesis — ahora lo explica de forma coherente.
+
 ## [0.7.0] - 2026-09-15
 
 ### Cambiado

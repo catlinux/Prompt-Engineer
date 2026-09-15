@@ -30,10 +30,10 @@ export function OpenQuestionsForm({ questions, loading, onRegenerate }: OpenQues
 
   return (
     <section className="section open-questions-form">
-      <h3>Decisiones necesarias para continuar</h3>
+      <h3>Decisiones bloqueantes</h3>
       <p className="open-questions-form__hint">
-        Son preguntas imprescindibles: sin responderlas no se puede avanzar bien. Respóndelas y vuelve a generar el
-        prompt con tus respuestas ya incorporadas.
+        Son preguntas imprescindibles: sin responderlas no se puede avanzar bien con esta parte del trabajo.
+        Respóndelas y vuelve a generar el prompt con tus respuestas ya incorporadas.
       </p>
       <div className="open-questions-form__list">
         {questions.map((q, i) => (

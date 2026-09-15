@@ -103,6 +103,23 @@ Este bloque (`ai_tool_recommendation`) es un campo propio de `StructuredPrompt`,
 
 Ningún caso recomendó Claude/Anthropic por defecto sin razonamiento explícito; los tres justifican la elección con las capacidades reales de cada tarea.
 
+## v0.8.0 — Distinguir decisiones bloqueantes de decisiones importantes no bloqueantes
+
+El usuario detectó que el sistema confundía "esto es importante" con "esto bloquea el trabajo". Con el modelo anterior (`necessary_decisions` vs `deferrable_decisions`), cualquier cosa moderadamente relevante tendía a acabar como pregunta bloqueante, obligando a responder antes de poder avanzar aunque se pudiera continuar razonablemente con una hipótesis.
+
+**Cambio quirúrgico** (sin tocar la arquitectura de recomendación de IA de v0.7.0, tal como pidió el usuario): se añadió una categoría intermedia, `important_pending_decisions`, entre las bloqueantes y las aplazables. Cada una lleva `topic`, `provisional_approach` (la hipótesis con la que se avanza), `why_important` y `what_could_change` (qué cambiaría si el usuario decide otra cosa después). La regla central añadida al system prompt (`server/deepseek.ts`, regla 2): antes de marcar algo como bloqueante hay que comprobar tres condiciones a la vez (impide continuar / no es razonable asumir una hipótesis / continuar sin ello podría causar trabajo inútil o difícil de revertir) — si no se cumplen las tres, no es bloqueante. También se añadió la regla de "bloqueo parcial": si algo bloquea solo una parte del proyecto, `why_necessary` debe decirlo explícitamente en vez de presentarlo como si detuviera todo.
+
+**UI:** nuevo componente `ImportantPendingDecisions.tsx` (sin formulario de respuesta — no obliga a regenerar) entre las decisiones bloqueantes (`OpenQuestionsForm`, renombrada en pantalla a "Decisiones bloqueantes") y las recomendaciones.
+
+**`final_prompt`:** regla explícita para no incluir contradicciones tipo "debes responder esto antes de continuar" cuando la decisión es de tipo "importante pendiente" — en su lugar, menciona la hipótesis de forma natural.
+
+**Verificado con los tres casos pedidos por el usuario:**
+1. App móvil de notas con sincronización, sin decidir nativa/multiplataforma → solo 1 decisión bloqueante (la elección de plataforma, con bloqueo parcial explícito: bloquea el cliente pero no el backend/modelo de datos); 3 decisiones importantes con hipótesis concretas (backend, resolución de conflictos, alcance MVP); resto aplazable.
+2. Canal de YouTube sin público objetivo definido → **0 decisiones bloqueantes**, 5 decisiones importantes con hipótesis razonables (público, idioma, formato, frecuencia, objetivo del canal).
+3. Tienda online sin país ni métodos de pago decididos → **0 decisiones bloqueantes**; país/pagos pasan a importantes con hipótesis provisional (pasarela configurable, región neutra parametrizable); el `final_prompt` dice explícitamente "avanza con hipótesis provisionales y no las trates como bloqueos", sin contradicciones.
+
+Confirmado sin regresión: la recomendación de herramienta de IA (`ai_tool_recommendation`) sigue funcionando exactamente igual (verificado con el caso 3: sigue recomendando Claude Code como principal con el mismo razonamiento que antes de este cambio).
+
 ## Pendiente / no hecho todavía
 
 - Botón para borrar la petición actual y empezar una consulta nueva, cerca del campo de entrada de texto. Pedido por el usuario, no implementado todavía.

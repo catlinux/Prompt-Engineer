@@ -1,5 +1,6 @@
 import type { AiToolCatalogEntry, QuestionAnswer, StructuredPrompt } from "../types";
 import { CopyButton } from "./CopyButton";
+import { ImportantPendingDecisions } from "./ImportantPendingDecisions";
 import { OpenQuestionsForm } from "./OpenQuestionsForm";
 import { SuggestedToolCard } from "./SuggestedToolCard";
 
@@ -80,6 +81,10 @@ export function StructuredPromptView({
 
       {result.necessary_decisions.length > 0 && (
         <OpenQuestionsForm questions={result.necessary_decisions} loading={loading} onRegenerate={onRegenerate} />
+      )}
+
+      {result.important_pending_decisions.length > 0 && (
+        <ImportantPendingDecisions decisions={result.important_pending_decisions} />
       )}
 
       {result.recommendations.length > 0 && (

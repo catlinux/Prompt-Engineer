@@ -6,6 +6,7 @@ import type {
   ContentCategory,
   DeferrableDecision,
   DetectedTask,
+  ImportantPendingDecision,
   NecessaryDecision,
   ProfessionalRole,
   Recommendation,
@@ -40,6 +41,21 @@ function isNecessaryDecisionArray(value: unknown): value is NecessaryDecision[] 
         item !== null &&
         typeof (item as NecessaryDecision).question === "string" &&
         typeof (item as NecessaryDecision).why_necessary === "string"
+    )
+  );
+}
+
+function isImportantPendingDecisionArray(value: unknown): value is ImportantPendingDecision[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (item) =>
+        typeof item === "object" &&
+        item !== null &&
+        typeof (item as ImportantPendingDecision).topic === "string" &&
+        typeof (item as ImportantPendingDecision).provisional_approach === "string" &&
+        typeof (item as ImportantPendingDecision).why_important === "string" &&
+        typeof (item as ImportantPendingDecision).what_could_change === "string"
     )
   );
 }
@@ -176,6 +192,9 @@ export function validateStructuredPrompt(value: unknown, validToolIds: Set<strin
   }
   if (!isNecessaryDecisionArray(v.necessary_decisions)) {
     throw new SchemaValidationError("El campo 'necessary_decisions' tiene un formato inválido.");
+  }
+  if (!isImportantPendingDecisionArray(v.important_pending_decisions)) {
+    throw new SchemaValidationError("El campo 'important_pending_decisions' tiene un formato inválido.");
   }
   if (!isDeferrableDecisionArray(v.deferrable_decisions)) {
     throw new SchemaValidationError("El campo 'deferrable_decisions' tiene un formato inválido.");

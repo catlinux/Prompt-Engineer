@@ -14,6 +14,13 @@ export interface NecessaryDecision {
   why_necessary: string;
 }
 
+export interface ImportantPendingDecision {
+  topic: string;
+  provisional_approach: string;
+  why_important: string;
+  what_could_change: string;
+}
+
 export interface DeferrableDecision {
   topic: string;
   note: string;
@@ -78,6 +85,7 @@ export interface StructuredPrompt {
   confirmed_requirements: string[];
   constraints: string[];
   necessary_decisions: NecessaryDecision[];
+  important_pending_decisions: ImportantPendingDecision[];
   deferrable_decisions: DeferrableDecision[];
   recommendations: Recommendation[];
   ai_tool_recommendation: AiToolRecommendationResult | null;
