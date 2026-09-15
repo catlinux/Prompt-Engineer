@@ -35,3 +35,11 @@ El modelo original (`requirements` + `missing_information` + `open_questions` + 
 Se sustituyó por: `confirmed_requirements` (solo lo dicho por el usuario), `necessary_decisions` (preguntas realmente bloqueantes, con motivo), `deferrable_decisions` (no bloquean, se posponen), `recommendations` (sugerencias de la IA, siempre marcadas como tales, nunca como obligación salvo que hagan falta para cumplir un requisito confirmado), y `role` (perspectiva profesional contextual con comportamientos concretos, solo cuando aporta valor — nunca una etiqueta vacía como "actúa como experto en X").
 
 Esto obliga al system prompt a razonar explícitamente, antes de generar cada campo, si una pregunta es realmente imprescindible o se puede aplazar — reduciendo las preguntas al mínimo necesario sin dejar de preguntar lo que de verdad hace falta.
+
+## Recomendación de IA: datos curados a mano, no búsqueda web integrada en el backend (v0.5.0)
+
+El usuario pidió que la app recomendara qué IA usar según la tarea, con datos actuales de precios y límites obtenidos por búsqueda web. Se investigó si la API de DeepSeek podía hacer esa búsqueda en cada petición: sí tiene búsqueda web nativa, pero solo en su endpoint compatible con Anthropic, no en el endpoint OpenAI-compatible que usa esta app, y la documentación pública no aclara activación, parámetros ni coste. Añadir una API de búsqueda externa (Brave, Google) para esto habría introducido una dependencia de pago nueva, algo que el usuario quería evitar.
+
+Se optó por: datos curados en `config/ai_recommendations.json`, actualizados a mano por un agente con búsqueda web (Claude Code) cuando el usuario lo pide, siguiendo un procedimiento documentado (`docs/ACTUALIZAR_RECOMENDACIONES_IA.md`). El backend elige qué herramienta recomendar con una regla determinista simple (sin IA), no con una nueva llamada a DeepSeek.
+
+Limitación aceptada conscientemente: quien use el proyecto sin un agente con búsqueda web no puede refrescar estos datos, quedan congelados en la fecha del último `git push`. El usuario decidió aceptar esta limitación en lugar de añadir complejidad/coste, dejándolo como mejora futura.

@@ -4,6 +4,16 @@ Aquí se explica, en lenguaje sencillo, qué ha cambiado en cada versión de la 
 
 El número de versión tiene tres partes (por ejemplo 0.2.0): la primera cambia cuando hay un cambio muy grande, la segunda cuando se añade algo nuevo o se mejora algo existente, y la tercera cuando se corrige un error pequeño.
 
+## [0.5.0] - 2026-09-15
+
+### Añadido
+- La aplicación ahora sugiere qué IA (Claude, ChatGPT o Gemini) conviene usar para cada prompt generado, indicando si tiene versión gratuita, qué incluye y sus límites principales. Es solo una sugerencia orientativa, no una obligación.
+- Esos datos de precios y límites están documentados en [docs/RECOMENDACIONES_IA.md](docs/RECOMENDACIONES_IA.md), con la fecha de la última actualización siempre visible.
+- Si esos datos tienen más de una semana, la aplicación lo avisa en pantalla, porque los precios y límites de las IA cambian con frecuencia.
+
+### Limitación conocida
+- Estos datos se actualizan a mano (con ayuda de un agente con acceso a internet, como Claude Code) cuando se pide explícitamente — la aplicación no los revisa sola. Quien descargue el proyecto sin un asistente así verá siempre la fecha de la última actualización que alguien subió. Detalles en [docs/ACTUALIZAR_RECOMENDACIONES_IA.md](docs/ACTUALIZAR_RECOMENDACIONES_IA.md).
+
 ## [0.4.1] - 2026-09-15
 
 ### Corregido

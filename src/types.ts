@@ -62,9 +62,26 @@ export interface GeneratePromptRequest {
   answers?: QuestionAnswer[];
 }
 
+export interface AiToolRecommendation {
+  id: string;
+  name: string;
+  has_free_tier: boolean;
+  free_tier_summary: string;
+  free_tier_limitations: string;
+  best_for: string[];
+  recommended_when: string;
+}
+
+export interface AiRecommendationsData {
+  updated_at: string;
+  tools: AiToolRecommendation[];
+}
+
 export interface GeneratePromptResponse {
   result: StructuredPrompt;
   model: string;
+  suggestedTool: AiToolRecommendation | null;
+  recommendationsUpdatedAt: string | null;
 }
 
 export interface ApiErrorResponse {

@@ -1,0 +1,33 @@
+{
+  "updated_at": "2026-09-15",
+  "source_note": "Datos recopilados manualmente mediante búsqueda web puntual. No se actualizan solos: alguien con un agente con acceso a búsqueda web (como Claude Code) debe refrescarlos siguiendo docs/ACTUALIZAR_RECOMENDACIONES_IA.md.",
+  "tools": [
+    {
+      "id": "claude",
+      "name": "Claude.ai (Anthropic)",
+      "has_free_tier": true,
+      "free_tier_summary": "Unas 30-100 respuestas al día según uso (cupo por tokens, no por mensajes, y se renueva de forma continua cada 5 horas). Incluye el modelo Sonnet, búsqueda web, Artifacts y subida de archivos.",
+      "free_tier_limitations": "No incluye Opus, Claude Code ni el modo de investigación en la versión gratuita.",
+      "best_for": ["software", "razonamiento complejo", "escritura técnica", "prompts largos y estructurados"],
+      "recommended_when": "La tarea es de programación, arquitectura de software, o requiere seguir instrucciones largas y precisas (como los prompts para Claude Code que genera esta app)."
+    },
+    {
+      "id": "chatgpt",
+      "name": "ChatGPT (OpenAI)",
+      "has_free_tier": true,
+      "free_tier_summary": "Chats de texto ilimitados desde agosto de 2026. Limitado a un único modelo (el más pequeño de la familia GPT-5.6) y a un solo modo de razonamiento.",
+      "free_tier_limitations": "Sin acceso a los modelos más potentes de OpenAI ni a límites ampliados de generación de imágenes/archivos.",
+      "best_for": ["uso general", "redacción", "tareas cotidianas", "brainstorming"],
+      "recommended_when": "La tarea es de uso general, redacción o consulta rápida sin necesidad del razonamiento más potente disponible."
+    },
+    {
+      "id": "gemini",
+      "name": "Gemini (Google AI Studio / API)",
+      "has_free_tier": true,
+      "free_tier_summary": "Nivel gratuito sin tarjeta de crédito con los modelos de la familia Flash (no los Pro, que pasaron a ser de pago). Límite de 1500 peticiones/día y hasta 15-30 peticiones por minuto según el modelo.",
+      "free_tier_limitations": "Los modelos Pro (más potentes) ya no están disponibles gratis. Google puede usar las conversaciones del nivel gratuito para mejorar sus productos.",
+      "best_for": ["volumen alto de peticiones pequeñas", "integraciones vía API gratuita"],
+      "recommended_when": "Se necesita hacer muchas llamadas pequeñas y automatizadas, y no hace falta el modelo más potente."
+    }
+  ]
+}

@@ -10,7 +10,8 @@ App web local (React + Vite + TS en el frontend, Express + TS en el backend) que
 
 - La clave `DEEPSEEK_API_KEY` **solo** vive en el backend (`server/`), leída vía `.env`. Nunca debe exponerse en el frontend ni enviarse al navegador.
 - El modelo de DeepSeek es configurable vía `DEEPSEEK_MODEL` en `.env` (por defecto `deepseek-flash`). No hardcodear el nombre del modelo en el código.
-- El sistema no debe inventar requisitos ni restricciones que el usuario no haya dicho. Cuando falta información debe distinguir entre "preguntarlo al usuario" (`open_questions`) y "proponerlo marcado como propuesta" (`assumed_proposals`) — nunca mezclarlo como si fuera un hecho.
+- El sistema no debe inventar requisitos ni restricciones que el usuario no haya dicho. Debe distinguir con rigor entre `confirmed_requirements` (lo que el usuario dijo), `necessary_decisions` (preguntas realmente bloqueantes), `deferrable_decisions` (no bloquean, se posponen) y `recommendations` (sugerencias de la IA, nunca obligaciones) — nunca mezclar estas categorías. Ver [DECISIONS.md](docs/DECISIONS.md).
+- Las recomendaciones de qué IA usar (`config/ai_recommendations.json`) se actualizan a mano, nunca automáticamente — ver [docs/ACTUALIZAR_RECOMENDACIONES_IA.md](docs/ACTUALIZAR_RECOMENDACIONES_IA.md) antes de tocar esos datos.
 - El contenido generado por DeepSeek responde en el mismo idioma en que el usuario escribe su petición (no forzar un idioma fijo ahí). La interfaz de la app y toda la documentación del repositorio están en castellano.
 - V1 deliberadamente sencilla: sin base de datos, sin autenticación, sin despliegue. No añadir infraestructura que no sea necesaria para la funcionalidad actual.
 

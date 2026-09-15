@@ -10,7 +10,9 @@ Plan acordado con el usuario, una fase a la vez, verificando antes de pasar a la
 2. ✅ **Versionado con número de 3 partes + fecha visible en pantalla.** Hecho (v0.2.0). La versión se lee de `package.json` (única fuente de verdad); la fecha se actualiza a mano junto con el CHANGELOG al cerrar cada versión.
 3. ✅ **Fase 2 — Interactividad real.** Hecho (v0.3.0). Las preguntas abiertas ahora tienen un campo de respuesta en pantalla (`src/components/OpenQuestionsForm.tsx`) y un botón que vuelve a llamar a la IA incluyendo esas respuestas (`answers` en `POST /api/generate-prompt`). Verificado con llamada real: las preguntas respondidas dejan de aparecer como pendientes y su contenido se refleja en el resto de campos.
 4. ✅ **Rediseño del modelo de análisis (ingeniería de requisitos real).** Hecho (v0.4.0). Ver detalle abajo.
-5. ⏳ **Fase 3 — Recomendación de qué IA usar.** Sugerir (marcado como recomendación, no como verdad fija) qué IA conviene para la tarea concreta: si tiene versión gratuita, si es suficiente, qué modelo recomienda, límites/créditos diarios si los hay. Requiere búsqueda web en tiempo real. Pendiente.
+5. ✅ **Fase 3 — Recomendación de qué IA usar.** Hecho (v0.5.0). Ver detalle abajo.
+
+Con esto, todas las fases del plan original están completadas.
 
 ## v0.4.0 — Rediseño del modelo de análisis
 
@@ -56,7 +58,21 @@ Solución en `server/deepseek.ts`:
 
 Verificado con 10 llamadas reales consecutivas tras el fix: 10/10 correctas (antes, 7 de 13 fallaban).
 
+## v0.5.0 — Recomendación de qué IA usar
+
+Investigación real (búsqueda web) de límites y versión gratuita de Claude.ai, ChatGPT y Gemini a fecha 2026-09-15, guardada en [`config/ai_recommendations.json`](../config/ai_recommendations.json) y documentada en legible en [docs/RECOMENDACIONES_IA.md](RECOMENDACIONES_IA.md).
+
+**Decisión técnica importante:** se investigó si la propia API de DeepSeek podía hacer la búsqueda web en cada petición (como pidió el usuario inicialmente). Se confirmó que DeepSeek sí tiene búsqueda web nativa, pero solo a través de su endpoint compatible con Anthropic (`api.deepseek.com/anthropic`), no en el endpoint compatible con OpenAI que usa esta app — y su documentación pública no detalla activación, parámetros ni coste con suficiente claridad para implementarlo con confianza. Se descartó integrarlo en el backend por ahora.
+
+**Solución adoptada:** el backend elige la herramienta recomendada de forma determinista (sin IA, `server/aiRecommendations.ts`) según si la petición es de software o no. Los datos de precios/límites se actualizan a mano, con ayuda de un agente con búsqueda web (como Claude Code), siguiendo el procedimiento en [docs/ACTUALIZAR_RECOMENDACIONES_IA.md](ACTUALIZAR_RECOMENDACIONES_IA.md). La interfaz avisa cuando esos datos tienen más de 7 días.
+
+**Limitación aceptada conscientemente:** quien descargue el proyecto sin un agente con búsqueda web no puede refrescar estos datos — se quedan congelados en la fecha del último `git push`. El usuario decidió aceptar esta limitación para esta versión en lugar de añadir una API de búsqueda de pago al backend. Ver [DECISIONS.md](DECISIONS.md).
+
+Verificado con llamada real: petición de software → recomienda Claude.ai; petición no-software → recomienda ChatGPT; `recommendationsUpdatedAt` se sirve correctamente.
+
 ## Pendiente / no hecho todavía
+
+- Mejorar la actualización de las recomendaciones de IA para que no dependa de tener un agente con búsqueda web (por ejemplo con una API de búsqueda propia del backend) — limitación conocida y aceptada de v0.5.0, ver arriba.
 
 - Posible mejora del system prompt (detectada revisando la respuesta del caso "bot de trading"): el `final_prompt` no siempre repite con la misma fuerza que `claude_code.documentation_to_create` la instrucción de crear documentación persistente (CLAUDE.md/docs/), y los criterios de verificación no siempre incluyen comprobar que no se han subido credenciales a git pese a que las instrucciones persistentes sí lo piden. Ajuste menor, no bloqueante.
 - Sin tests automatizados

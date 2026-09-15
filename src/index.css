@@ -213,6 +213,21 @@ button:disabled {
   opacity: 0.92;
 }
 
+.suggested-tool-section {
+  border-color: var(--accent);
+}
+
+.suggested-tool__updated-notice {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.suggested-tool__stale-notice {
+  color: #92400e;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
 .final-prompt__header {
   display: flex;
   justify-content: space-between;

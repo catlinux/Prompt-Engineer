@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import { generateStructuredPrompt, loadDeepSeekConfig, DeepSeekError } from "./deepseek.js";
+import { pickRecommendedTool, getRecommendationsUpdatedAt } from "./aiRecommendations.js";
 import type { GeneratePromptRequest, GeneratePromptResponse, ApiErrorResponse, QuestionAnswer } from "../src/types.js";
 
 const app = express();
@@ -39,7 +40,12 @@ app.post("/api/generate-prompt", async (req, res) => {
   try {
     const config = loadDeepSeekConfig();
     const result = await generateStructuredPrompt(config, userRequest.trim(), answers);
-    const response: GeneratePromptResponse = { result, model: config.model };
+    const response: GeneratePromptResponse = {
+      result,
+      model: config.model,
+      suggestedTool: pickRecommendedTool(result),
+      recommendationsUpdatedAt: getRecommendationsUpdatedAt(),
+    };
     res.json(response);
   } catch (err) {
     if (err instanceof DeepSeekError) {
