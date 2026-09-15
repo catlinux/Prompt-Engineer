@@ -120,7 +120,19 @@ El usuario detectó que el sistema confundía "esto es importante" con "esto blo
 
 Confirmado sin regresión: la recomendación de herramienta de IA (`ai_tool_recommendation`) sigue funcionando exactamente igual (verificado con el caso 3: sigue recomendando Claude Code como principal con el mismo razonamiento que antes de este cambio).
 
+## v0.9.0 — Entorno de trabajo (CLAUDE.md/TODO.md) cuando la IA recomendada es Claude Code
+
+El usuario señaló que recomendar Claude Code no debería quedarse solo en el prompt: Claude Code trabaja con un `CLAUDE.md` persistente en el proyecto, así que la aplicación puede prepararlo directamente. Se decidió con el usuario: pregunta explícita de sí/no antes de mostrar el contenido extra (para no ensuciar la pantalla cuando no interesa), y entrega por botón de copiar por archivo — la app es solo frontend+backend sin acceso al disco del usuario, no puede escribir la carpeta del proyecto ella misma ni generar un .zip en esta versión.
+
+**Nuevo campo** `claude_code_workspace` en `StructuredPrompt` (`{offer_message, suggested_folder_name, claude_md_content, todo_md_content}`), rellenado por DeepSeek en la misma llamada solo cuando `ai_tool_recommendation.primary.tool_id === "claude_code"` — en cualquier otro caso es `null`. El contenido es real y específico del proyecto (basado en el rol, objetivo, restricciones y decisiones/hipótesis ya analizadas), no una plantilla genérica. El validador (`server/schema.ts`) rechaza la respuesta si `claude_code_workspace` aparece sin que la herramienta principal sea `claude_code`, evitando incoherencia.
+
+**UI:** nuevo componente `ClaudeCodeWorkspaceOffer.tsx` — muestra primero solo la pregunta (`offer_message` redactado por DeepSeek, adaptado a cada petición) con botones Sí/No; si Sí, expande el nombre de carpeta sugerido y los dos archivos con su propio botón de copiar cada uno (reutilizando `CopyButton` con la nueva prop `label`).
+
+**Verificado con llamada real** (gestor de tareas personales en Python): `claude_code_workspace` se generó con contenido específico del proyecto real (esquema SQLite, CLI como hipótesis, recordatorios) en ambos archivos, no genérico. Verificado también que con una petición cuya herramienta principal no es Claude Code (canal de YouTube → `claude_ai`), el campo es `null` correctamente.
+
 ## Pendiente / no hecho todavía
+
+- Entrega del entorno de trabajo de Claude Code solo por copiar/pegar archivo a archivo — no genera un .zip descargable ni escribe directamente al disco (la app no tiene acceso al sistema de archivos del usuario). Aceptado conscientemente para esta versión; podría mejorarse más adelante si aporta valor suficiente.
 
 - Botón para borrar la petición actual y empezar una consulta nueva, cerca del campo de entrada de texto. Pedido por el usuario, no implementado todavía.
 - Mejorar la actualización de las recomendaciones de IA para que no dependa de tener un agente con búsqueda web (por ejemplo con una API de búsqueda propia del backend) — limitación conocida y aceptada de v0.5.0, ver arriba.

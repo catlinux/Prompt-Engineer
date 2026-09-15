@@ -43,6 +43,13 @@ export interface ClaudeCodeSection {
   how_to_update_documentation: string;
 }
 
+export interface ClaudeCodeWorkspace {
+  offer_message: string;
+  suggested_folder_name: string;
+  claude_md_content: string;
+  todo_md_content: string;
+}
+
 export type ContentCategory =
   | "texto_general"
   | "codigo_software"
@@ -93,6 +100,7 @@ export interface StructuredPrompt {
   expected_result: string;
   final_prompt: string;
   claude_code: ClaudeCodeSection | null;
+  claude_code_workspace: ClaudeCodeWorkspace | null;
 }
 
 export interface QuestionAnswer {

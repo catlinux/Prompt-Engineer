@@ -69,3 +69,11 @@ Se añadió `important_pending_decisions` como categoría intermedia: decisiones
 Se estableció una regla de tres condiciones para clasificar algo como bloqueante (impide continuar con una parte esencial / no es razonable asumir una hipótesis / continuar sin ello podría causar trabajo inútil o difícil de revertir) — las tres deben cumplirse, no basta con que la información sea importante. También se añadió la noción de "bloqueo parcial": una decisión bloqueante debe indicar si solo bloquea una parte del proyecto, para no detener todo el análisis por algo que solo afecta a una fase concreta (ej. país/pagos de una tienda no bloquean el catálogo ni la arquitectura).
 
 Cambio deliberadamente acotado a la clasificación de decisiones — no se tocó la arquitectura de recomendación de herramientas de IA de v0.7.0, verificado sin regresión.
+
+## Entorno de trabajo para Claude Code: copiar/pegar por archivo, no .zip ni escritura directa (v0.9.0)
+
+Cuando la herramienta principal recomendada es Claude Code, tiene sentido ir más allá del prompt: Claude Code usa un `CLAUDE.md` persistente en el proyecto para no depender de la memoria de la conversación. Se decidió con el usuario ofrecerlo, pero solo tras una pregunta explícita de sí/no (para no ensuciar la pantalla en el caso, más común, de que la recomendación no sea Claude Code o el usuario no lo quiera).
+
+La aplicación es solo frontend (navegador) + backend (Express) sin acceso al sistema de archivos del usuario — no puede crear la carpeta del proyecto ni escribir los archivos directamente. Se evaluaron dos formas de entrega: botón de copiar por archivo (elegido, sin tocar la arquitectura) frente a generar un `.zip` descargable (habría añadido una librería de generación de zip y lógica de descarga nueva sin necesidad clara todavía). Se optó por copiar/pegar por ahora; queda como posible mejora futura si el usuario lo pide.
+
+El contenido de `CLAUDE.md`/`TODO.md` lo genera DeepSeek en la misma llamada que el resto del análisis (sin coste extra), basado en el rol, objetivo, restricciones y decisiones/hipótesis ya analizadas — nunca una plantilla genérica. El validador exige que este campo solo pueda estar presente si la herramienta principal recomendada es exactamente `claude_code`, para que nunca aparezca de forma incoherente con la recomendación de arriba.

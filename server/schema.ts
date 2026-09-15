@@ -3,6 +3,7 @@ import type {
   AiToolPick,
   AiToolRecommendationResult,
   ClaudeCodeSection,
+  ClaudeCodeWorkspace,
   ContentCategory,
   DeferrableDecision,
   DetectedTask,
@@ -161,6 +162,21 @@ function isClaudeCodeSection(value: unknown): value is ClaudeCodeSection {
   );
 }
 
+function isClaudeCodeWorkspace(value: unknown): value is ClaudeCodeWorkspace {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as ClaudeCodeWorkspace;
+  return (
+    typeof v.offer_message === "string" &&
+    v.offer_message.trim() !== "" &&
+    typeof v.suggested_folder_name === "string" &&
+    v.suggested_folder_name.trim() !== "" &&
+    typeof v.claude_md_content === "string" &&
+    v.claude_md_content.trim() !== "" &&
+    typeof v.todo_md_content === "string" &&
+    v.todo_md_content.trim() !== ""
+  );
+}
+
 export class SchemaValidationError extends Error {}
 
 export function validateStructuredPrompt(value: unknown, validToolIds: Set<string>): StructuredPrompt {
@@ -221,6 +237,15 @@ export function validateStructuredPrompt(value: unknown, validToolIds: Set<strin
   }
   if (v.is_software_request === true && v.claude_code === null) {
     throw new SchemaValidationError("'claude_code' no puede ser null cuando 'is_software_request' es true.");
+  }
+  if (v.claude_code_workspace !== null && !isClaudeCodeWorkspace(v.claude_code_workspace)) {
+    throw new SchemaValidationError("El campo 'claude_code_workspace' tiene un formato inválido.");
+  }
+  const primaryToolId = (v.ai_tool_recommendation as AiToolRecommendationResult | null)?.primary?.tool_id;
+  if (v.claude_code_workspace !== null && primaryToolId !== "claude_code") {
+    throw new SchemaValidationError(
+      "'claude_code_workspace' solo puede estar presente cuando la herramienta principal recomendada es 'claude_code'."
+    );
   }
 
   return v as unknown as StructuredPrompt;

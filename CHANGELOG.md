@@ -4,6 +4,11 @@ Aquí se explica, en lenguaje sencillo, qué ha cambiado en cada versión de la 
 
 El número de versión tiene tres partes (por ejemplo 0.2.0): la primera cambia cuando hay un cambio muy grande, la segunda cuando se añade algo nuevo o se mejora algo existente, y la tercera cuando se corrige un error pequeño.
 
+## [0.9.0] - 2026-09-15
+
+### Añadido
+- Cuando la aplicación recomienda Claude Code como herramienta principal, ahora pregunta si quieres que prepare también el entorno de trabajo: un archivo `CLAUDE.md` con las instrucciones del proyecto y un `TODO.md` con las tareas y decisiones pendientes, listos para copiar y guardar en tu carpeta antes de abrir Claude Code. Si respondes que no, la aplicación sigue mostrando solo el prompt, como hasta ahora.
+
 ## [0.8.0] - 2026-09-15
 
 ### Cambiado

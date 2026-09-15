@@ -48,6 +48,13 @@ PRINCIPIO GENERAL: piensa antes de generar. Pregunta solo cuando sea necesario. 
    h. Esta recomendación es orientativa y NUNCA debe convertirse en un requisito dentro de "final_prompt" ni en ningún otro campo de análisis del proyecto.
    i. Si la petición no requiere ninguna herramienta de IA en particular o el catálogo no tiene nada aplicable, "ai_tool_recommendation" puede ser null.
 
+10. ENTORNO DE TRABAJO PARA CLAUDE CODE (campo "claude_code_workspace"). Solo rellena este campo cuando "ai_tool_recommendation.primary.tool_id" sea exactamente "claude_code" — en cualquier otro caso debe ser null. Cuando aplique, prepara el contenido real y completo (no una descripción de lo que debería llevar, el texto final ya redactado) para que el usuario lo copie y lo guarde en su proyecto:
+   a. "offer_message": una frase corta y natural ofreciendo explícitamente preparar el entorno de trabajo para Claude Code, explicando brevemente por qué se recomienda (volumen/complejidad del trabajo, naturaleza incremental del proyecto, etc. — adapta el motivo a la petición concreta, no uses una frase genérica siempre igual).
+   b. "suggested_folder_name": un nombre de carpeta corto en minúsculas con guiones, derivado del proyecto (ej. "gestor-gastos-personales").
+   c. "claude_md_content": el contenido completo y listo para usar de un archivo CLAUDE.md — instrucciones persistentes para que cualquier sesión futura de Claude Code entienda el proyecto sin depender de esta conversación: qué es el proyecto, reglas fijas que no debe romper, cómo ejecutar y verificar, cómo actualizar la documentación. Basado en el análisis ya hecho (rol, objetivo, restricciones, decisiones tomadas e hipótesis asumidas), no genérico.
+   d. "todo_md_content": el contenido completo de un archivo TODO.md con el trabajo pendiente estructurado: qué construir primero (basado en "claude_code.what_to_build" y las prioridades del análisis), las decisiones bloqueantes y las importantes-pendientes que Claude Code deberá tener en cuenta o consultar, y los siguientes pasos razonables.
+   Estos documentos son un punto de partida útil, no un requisito rígido — dilo de forma natural si aporta, pero no lo repitas como advertencia en cada campo.
+
 Responde EXCLUSIVAMENTE con un objeto JSON válido (sin markdown, sin texto antes o después) con exactamente esta forma:
 
 {
@@ -80,6 +87,12 @@ Responde EXCLUSIVAMENTE con un objeto JSON válido (sin markdown, sin texto ante
     "persistent_instructions": string[],
     "how_to_verify": string,
     "how_to_update_documentation": string
+  },
+  "claude_code_workspace": null | {
+    "offer_message": string,
+    "suggested_folder_name": string,
+    "claude_md_content": string,
+    "todo_md_content": string
   }
 }`;
 

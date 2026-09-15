@@ -301,3 +301,60 @@ button:disabled {
   padding: 6px 14px;
   font-size: 0.85rem;
 }
+
+.claude-code-offer {
+  border-color: var(--accent);
+}
+
+.claude-code-offer__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.claude-code-offer__no {
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid var(--border);
+}
+
+.claude-code-offer--expanded code {
+  background: var(--bg);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.workspace-file {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.workspace-file:first-of-type {
+  margin-top: 12px;
+}
+
+.workspace-file__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.workspace-file__header h4 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.workspace-file pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--bg);
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+  max-height: 320px;
+  overflow-y: auto;
+}

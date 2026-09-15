@@ -1,4 +1,5 @@
 import type { AiToolCatalogEntry, QuestionAnswer, StructuredPrompt } from "../types";
+import { ClaudeCodeWorkspaceOffer } from "./ClaudeCodeWorkspaceOffer";
 import { CopyButton } from "./CopyButton";
 import { ImportantPendingDecisions } from "./ImportantPendingDecisions";
 import { OpenQuestionsForm } from "./OpenQuestionsForm";
@@ -49,6 +50,8 @@ export function StructuredPromptView({
           updatedAt={recommendationsUpdatedAt}
         />
       )}
+
+      {result.claude_code_workspace && <ClaudeCodeWorkspaceOffer workspace={result.claude_code_workspace} />}
 
       {result.role && (
         <section className="section role-section">
