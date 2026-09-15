@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { RequestInput } from "./components/RequestInput";
 import { StructuredPromptView } from "./components/StructuredPromptView";
-import type { ApiErrorResponse, GeneratePromptResponse } from "./types";
+import {
+  APP_VERSION,
+  APP_VERSION_DATE,
+  type ApiErrorResponse,
+  type GeneratePromptResponse,
+  type QuestionAnswer,
+} from "./types";
 
 export default function App() {
   const [userRequest, setUserRequest] = useState("");
@@ -9,7 +15,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [response, setResponse] = useState<GeneratePromptResponse | null>(null);
 
-  async function handleSubmit() {
+  async function generate(answers?: QuestionAnswer[]) {
     if (userRequest.trim().length === 0 || loading) return;
     setLoading(true);
     setError(null);
@@ -17,7 +23,7 @@ export default function App() {
       const res = await fetch("/api/generate-prompt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userRequest }),
+        body: JSON.stringify({ userRequest, answers }),
       });
       if (!res.ok) {
         const body = (await res.json()) as ApiErrorResponse;
@@ -35,16 +41,28 @@ export default function App() {
 
   return (
     <>
-      <h1>Prompt Engineer</h1>
+      <div className="app-header">
+        <h1>Prompt Engineer</h1>
+        <span className="app-version">
+          v{APP_VERSION} · {APP_VERSION_DATE}
+        </span>
+      </div>
       <p className="subtitle">
         Escribe tu petición en lenguaje natural y genera un prompt profesional y estructurado.
       </p>
 
-      <RequestInput value={userRequest} onChange={setUserRequest} onSubmit={handleSubmit} loading={loading} />
+      <RequestInput value={userRequest} onChange={setUserRequest} onSubmit={() => generate()} loading={loading} />
 
       {error && <div className="error-banner">{error}</div>}
 
-      {response && <StructuredPromptView result={response.result} model={response.model} />}
+      {response && (
+        <StructuredPromptView
+          result={response.result}
+          model={response.model}
+          loading={loading}
+          onRegenerate={(answers) => generate(answers)}
+        />
+      )}
     </>
   );
 }

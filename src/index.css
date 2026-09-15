@@ -38,9 +38,21 @@ body {
   padding: 32px 20px 64px;
 }
 
+.app-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 h1 {
   font-size: 1.5rem;
-  margin-bottom: 4px;
+  margin: 0;
+}
+
+.app-version {
+  color: var(--muted);
+  font-size: 0.8rem;
 }
 
 .subtitle {
@@ -155,8 +167,50 @@ button:disabled {
   margin-top: 2px;
 }
 
+.open-questions-form__hint {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-top: 0;
+}
+
+.open-questions-form__list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.open-questions-form__item label {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.open-questions-form__item textarea {
+  width: 100%;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+
 .claude-code-section {
   border-color: var(--accent);
+}
+
+.role-section {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, var(--card-bg));
+}
+
+.recommendations-section,
+.deferrable-section {
+  opacity: 0.92;
 }
 
 .final-prompt__header {

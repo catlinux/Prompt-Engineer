@@ -1,14 +1,29 @@
 import "dotenv/config";
 import express from "express";
 import { generateStructuredPrompt, loadDeepSeekConfig, DeepSeekError } from "./deepseek.js";
-import type { GeneratePromptRequest, GeneratePromptResponse, ApiErrorResponse } from "../src/types.js";
+import type { GeneratePromptRequest, GeneratePromptResponse, ApiErrorResponse, QuestionAnswer } from "../src/types.js";
 
 const app = express();
 app.use(express.json({ limit: "100kb" }));
 
+function parseAnswers(raw: unknown): QuestionAnswer[] | undefined {
+  if (raw === undefined) return undefined;
+  if (!Array.isArray(raw)) return undefined;
+  const answers = raw.filter(
+    (item): item is QuestionAnswer =>
+      typeof item === "object" &&
+      item !== null &&
+      typeof (item as QuestionAnswer).question === "string" &&
+      typeof (item as QuestionAnswer).answer === "string" &&
+      (item as QuestionAnswer).answer.trim().length > 0
+  );
+  return answers.length > 0 ? answers : undefined;
+}
+
 app.post("/api/generate-prompt", async (req, res) => {
   const body = req.body as Partial<GeneratePromptRequest>;
   const userRequest = body.userRequest;
+  const answers = parseAnswers(body.answers);
 
   if (typeof userRequest !== "string" || userRequest.trim().length === 0) {
     const error: ApiErrorResponse = { error: "Debes escribir una petición antes de generar el prompt." };
@@ -23,7 +38,7 @@ app.post("/api/generate-prompt", async (req, res) => {
 
   try {
     const config = loadDeepSeekConfig();
-    const result = await generateStructuredPrompt(config, userRequest.trim());
+    const result = await generateStructuredPrompt(config, userRequest.trim(), answers);
     const response: GeneratePromptResponse = { result, model: config.model };
     res.json(response);
   } catch (err) {

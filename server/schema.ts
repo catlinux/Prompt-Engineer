@@ -1,34 +1,60 @@
-import type { AssumedProposal, ClaudeCodeSection, OpenQuestion, StructuredPrompt } from "../src/types.js";
+import type {
+  ClaudeCodeSection,
+  DeferrableDecision,
+  NecessaryDecision,
+  ProfessionalRole,
+  Recommendation,
+  StructuredPrompt,
+} from "../src/types.js";
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 
-function isOpenQuestionArray(value: unknown): value is OpenQuestion[] {
+function isNecessaryDecisionArray(value: unknown): value is NecessaryDecision[] {
   return (
     Array.isArray(value) &&
     value.every(
       (item) =>
         typeof item === "object" &&
         item !== null &&
-        typeof (item as OpenQuestion).question === "string" &&
-        typeof (item as OpenQuestion).reason === "string"
+        typeof (item as NecessaryDecision).question === "string" &&
+        typeof (item as NecessaryDecision).why_necessary === "string"
     )
   );
 }
 
-function isAssumedProposalArray(value: unknown): value is AssumedProposal[] {
+function isDeferrableDecisionArray(value: unknown): value is DeferrableDecision[] {
   return (
     Array.isArray(value) &&
     value.every(
       (item) =>
         typeof item === "object" &&
         item !== null &&
-        typeof (item as AssumedProposal).topic === "string" &&
-        typeof (item as AssumedProposal).proposal === "string" &&
-        typeof (item as AssumedProposal).reason === "string"
+        typeof (item as DeferrableDecision).topic === "string" &&
+        typeof (item as DeferrableDecision).note === "string"
     )
   );
+}
+
+function isRecommendationArray(value: unknown): value is Recommendation[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (item) =>
+        typeof item === "object" &&
+        item !== null &&
+        typeof (item as Recommendation).topic === "string" &&
+        typeof (item as Recommendation).recommendation === "string" &&
+        typeof (item as Recommendation).reason === "string"
+    )
+  );
+}
+
+function isProfessionalRole(value: unknown): value is ProfessionalRole {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as ProfessionalRole;
+  return typeof v.role === "string" && v.role.trim() !== "" && isStringArray(v.behaviors) && v.behaviors.length > 0;
 }
 
 function isClaudeCodeSection(value: unknown): value is ClaudeCodeSection {
@@ -57,26 +83,29 @@ export function validateStructuredPrompt(value: unknown): StructuredPrompt {
   if (typeof v.is_software_request !== "boolean") {
     throw new SchemaValidationError("Falta el campo 'is_software_request' (boolean).");
   }
+  if (v.role !== null && !isProfessionalRole(v.role)) {
+    throw new SchemaValidationError("El campo 'role' debe ser null o un objeto {role, behaviors[]} válido.");
+  }
   if (typeof v.objective !== "string" || v.objective.trim() === "") {
     throw new SchemaValidationError("Falta el campo 'objective' (string no vacío).");
   }
   if (v.context !== null && typeof v.context !== "string") {
     throw new SchemaValidationError("El campo 'context' debe ser string o null.");
   }
-  if (!isStringArray(v.requirements)) {
-    throw new SchemaValidationError("El campo 'requirements' debe ser un array de strings.");
+  if (!isStringArray(v.confirmed_requirements)) {
+    throw new SchemaValidationError("El campo 'confirmed_requirements' debe ser un array de strings.");
   }
   if (!isStringArray(v.constraints)) {
     throw new SchemaValidationError("El campo 'constraints' debe ser un array de strings.");
   }
-  if (!isStringArray(v.missing_information)) {
-    throw new SchemaValidationError("El campo 'missing_information' debe ser un array de strings.");
+  if (!isNecessaryDecisionArray(v.necessary_decisions)) {
+    throw new SchemaValidationError("El campo 'necessary_decisions' tiene un formato inválido.");
   }
-  if (!isOpenQuestionArray(v.open_questions)) {
-    throw new SchemaValidationError("El campo 'open_questions' tiene un formato inválido.");
+  if (!isDeferrableDecisionArray(v.deferrable_decisions)) {
+    throw new SchemaValidationError("El campo 'deferrable_decisions' tiene un formato inválido.");
   }
-  if (!isAssumedProposalArray(v.assumed_proposals)) {
-    throw new SchemaValidationError("El campo 'assumed_proposals' tiene un formato inválido.");
+  if (!isRecommendationArray(v.recommendations)) {
+    throw new SchemaValidationError("El campo 'recommendations' tiene un formato inválido.");
   }
   if (!isStringArray(v.verification_criteria)) {
     throw new SchemaValidationError("El campo 'verification_criteria' debe ser un array de strings.");

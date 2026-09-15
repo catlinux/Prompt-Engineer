@@ -1,11 +1,27 @@
-export interface OpenQuestion {
-  question: string;
-  reason: string;
+import pkg from "../package.json";
+
+export const APP_VERSION = pkg.version;
+export const APP_VERSION_DATE = "2026-09-15";
+// Recuerda actualizar esta fecha cada vez que cambie la versión en package.json.
+
+export interface ProfessionalRole {
+  role: string;
+  behaviors: string[];
 }
 
-export interface AssumedProposal {
+export interface NecessaryDecision {
+  question: string;
+  why_necessary: string;
+}
+
+export interface DeferrableDecision {
   topic: string;
-  proposal: string;
+  note: string;
+}
+
+export interface Recommendation {
+  topic: string;
+  recommendation: string;
   reason: string;
 }
 
@@ -22,21 +38,28 @@ export interface ClaudeCodeSection {
 
 export interface StructuredPrompt {
   is_software_request: boolean;
+  role: ProfessionalRole | null;
   objective: string;
   context: string | null;
-  requirements: string[];
+  confirmed_requirements: string[];
   constraints: string[];
-  missing_information: string[];
-  open_questions: OpenQuestion[];
-  assumed_proposals: AssumedProposal[];
+  necessary_decisions: NecessaryDecision[];
+  deferrable_decisions: DeferrableDecision[];
+  recommendations: Recommendation[];
   verification_criteria: string[];
   expected_result: string;
   final_prompt: string;
   claude_code: ClaudeCodeSection | null;
 }
 
+export interface QuestionAnswer {
+  question: string;
+  answer: string;
+}
+
 export interface GeneratePromptRequest {
   userRequest: string;
+  answers?: QuestionAnswer[];
 }
 
 export interface GeneratePromptResponse {

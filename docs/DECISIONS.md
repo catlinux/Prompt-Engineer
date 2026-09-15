@@ -27,3 +27,11 @@ No hay manera de guardar el historial de peticiones todavía. Deliberado: el obj
 ## Idioma: interfaz y documentación en castellano, contenido generado sigue el idioma del usuario
 
 La app se publicará en GitHub con vocación de alcance más amplio, por lo que la interfaz, los textos fijos del código y toda la documentación del repositorio están en castellano. El contenido que genera DeepSeek (objetivo, requisitos, prompt final...) sigue respondiendo en el idioma en que el usuario escriba su petición — no se fuerza un idioma fijo ahí, ya que limitaría la utilidad para quien escriba en otro idioma.
+
+## Modelo de análisis: separar requisitos, decisiones necesarias, decisiones aplazables y recomendaciones (v0.4.0)
+
+El modelo original (`requirements` + `missing_information` + `open_questions` + `assumed_proposals`) mezclaba con demasiada facilidad "lo que el usuario pidió" con "lo que la IA sugiere", y no distinguía entre información que bloquea el trabajo y detalles que se pueden posponer. El usuario pidió explícitamente que la herramienta se comportara como un ingeniero de requisitos, no como un generador de texto más largo.
+
+Se sustituyó por: `confirmed_requirements` (solo lo dicho por el usuario), `necessary_decisions` (preguntas realmente bloqueantes, con motivo), `deferrable_decisions` (no bloquean, se posponen), `recommendations` (sugerencias de la IA, siempre marcadas como tales, nunca como obligación salvo que hagan falta para cumplir un requisito confirmado), y `role` (perspectiva profesional contextual con comportamientos concretos, solo cuando aporta valor — nunca una etiqueta vacía como "actúa como experto en X").
+
+Esto obliga al system prompt a razonar explícitamente, antes de generar cada campo, si una pregunta es realmente imprescindible o se puede aplazar — reduciendo las preguntas al mínimo necesario sin dejar de preguntar lo que de verdad hace falta.

@@ -1,9 +1,12 @@
-import type { StructuredPrompt } from "../types";
+import type { QuestionAnswer, StructuredPrompt } from "../types";
 import { CopyButton } from "./CopyButton";
+import { OpenQuestionsForm } from "./OpenQuestionsForm";
 
 interface StructuredPromptViewProps {
   result: StructuredPrompt;
   model: string;
+  loading: boolean;
+  onRegenerate: (answers: QuestionAnswer[]) => void;
 }
 
 function ListSection({ title, items }: { title: string; items: string[] }) {
@@ -20,13 +23,27 @@ function ListSection({ title, items }: { title: string; items: string[] }) {
   );
 }
 
-export function StructuredPromptView({ result, model }: StructuredPromptViewProps) {
+export function StructuredPromptView({ result, model, loading, onRegenerate }: StructuredPromptViewProps) {
   return (
     <div className="structured-prompt">
       <div className="structured-prompt__meta">
         Generado con <code>{model}</code>
         {result.is_software_request && <span className="badge">Petición de software · incluye sección Claude Code</span>}
       </div>
+
+      {result.role && (
+        <section className="section role-section">
+          <h3>Rol / perspectiva profesional</h3>
+          <p>
+            <strong>{result.role.role}</strong>
+          </p>
+          <ul>
+            {result.role.behaviors.map((b, i) => (
+              <li key={i}>{b}</li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="section">
         <h3>Objetivo</h3>
@@ -40,32 +57,36 @@ export function StructuredPromptView({ result, model }: StructuredPromptViewProp
         </section>
       )}
 
-      <ListSection title="Requisitos" items={result.requirements} />
+      <ListSection title="Requisitos confirmados" items={result.confirmed_requirements} />
       <ListSection title="Restricciones" items={result.constraints} />
-      <ListSection title="Información ausente" items={result.missing_information} />
 
-      {result.open_questions.length > 0 && (
-        <section className="section">
-          <h3>Preguntas abiertas</h3>
+      {result.necessary_decisions.length > 0 && (
+        <OpenQuestionsForm questions={result.necessary_decisions} loading={loading} onRegenerate={onRegenerate} />
+      )}
+
+      {result.recommendations.length > 0 && (
+        <section className="section recommendations-section">
+          <h3>Recomendaciones de la IA</h3>
+          <p className="open-questions-form__hint">No son obligaciones: son sugerencias, tú decides si aplicarlas.</p>
           <ul>
-            {result.open_questions.map((q, i) => (
+            {result.recommendations.map((r, i) => (
               <li key={i}>
-                <strong>{q.question}</strong>
-                <div className="reason">{q.reason}</div>
+                <strong>{r.topic}:</strong> Recomendación: {r.recommendation}
+                <div className="reason">{r.reason}</div>
               </li>
             ))}
           </ul>
         </section>
       )}
 
-      {result.assumed_proposals.length > 0 && (
-        <section className="section">
-          <h3>Propuestas asumidas</h3>
+      {result.deferrable_decisions.length > 0 && (
+        <section className="section deferrable-section">
+          <h3>Decisiones que se pueden aplazar</h3>
+          <p className="open-questions-form__hint">No bloquean el trabajo: se pueden resolver más adelante.</p>
           <ul>
-            {result.assumed_proposals.map((p, i) => (
+            {result.deferrable_decisions.map((d, i) => (
               <li key={i}>
-                <strong>{p.topic}:</strong> {p.proposal}
-                <div className="reason">{p.reason}</div>
+                <strong>{d.topic}:</strong> {d.note}
               </li>
             ))}
           </ul>

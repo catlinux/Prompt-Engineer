@@ -2,6 +2,35 @@
 
 Última actualización: 2026-09-15
 
+## En curso: mejoras por fases (post-v0.1.0)
+
+Plan acordado con el usuario, una fase a la vez, verificando antes de pasar a la siguiente. Ver detalle de cada cambio en [CHANGELOG.md](../CHANGELOG.md).
+
+1. ✅ **Fase 1 — Prompt final más corto y sin redundancia.** Hecho y verificado con llamada real a DeepSeek.
+2. ✅ **Versionado con número de 3 partes + fecha visible en pantalla.** Hecho (v0.2.0). La versión se lee de `package.json` (única fuente de verdad); la fecha se actualiza a mano junto con el CHANGELOG al cerrar cada versión.
+3. ✅ **Fase 2 — Interactividad real.** Hecho (v0.3.0). Las preguntas abiertas ahora tienen un campo de respuesta en pantalla (`src/components/OpenQuestionsForm.tsx`) y un botón que vuelve a llamar a la IA incluyendo esas respuestas (`answers` en `POST /api/generate-prompt`). Verificado con llamada real: las preguntas respondidas dejan de aparecer como pendientes y su contenido se refleja en el resto de campos.
+4. ✅ **Rediseño del modelo de análisis (ingeniería de requisitos real).** Hecho (v0.4.0). Ver detalle abajo.
+5. ⏳ **Fase 3 — Recomendación de qué IA usar.** Sugerir (marcado como recomendación, no como verdad fija) qué IA conviene para la tarea concreta: si tiene versión gratuita, si es suficiente, qué modelo recomienda, límites/créditos diarios si los hay. Requiere búsqueda web en tiempo real. Pendiente.
+
+## v0.4.0 — Rediseño del modelo de análisis
+
+Cambio de fondo pedido por el usuario: la aplicación debía dejar de ser "un generador de prompts más largos" y comportarse como un ingeniero de requisitos — separando con rigor qué es un requisito confirmado, qué es una decisión realmente bloqueante, qué se puede aplazar, y qué es solo una recomendación de la IA.
+
+**Modelo de datos nuevo** (`src/types.ts`, `StructuredPrompt`): sustituye `requirements`/`missing_information`/`open_questions`/`assumed_proposals` por:
+- `role: ProfessionalRole | null` — perspectiva profesional contextual con comportamientos concretos, solo cuando aporta valor.
+- `confirmed_requirements: string[]` — solo lo que el usuario ha dicho de verdad.
+- `necessary_decisions: NecessaryDecision[]` — preguntas realmente bloqueantes, con `why_necessary`. Sigue siendo lo que rellena `OpenQuestionsForm.tsx` y lo que se responde para regenerar.
+- `deferrable_decisions: DeferrableDecision[]` — cosas que faltan pero no bloquean, nuevo.
+- `recommendations: Recommendation[]` — sugerencias de la IA, siempre marcadas como tales, nunca como requisito u obligación.
+
+El system prompt (`server/deepseek.ts`) y el validador (`server/schema.ts`) se actualizaron en consecuencia. La interfaz (`StructuredPromptView.tsx`) muestra cada categoría por separado, con las recomendaciones y decisiones aplazables visualmente atenuadas para no competir con lo importante.
+
+**Verificado con la petición de prueba pedida por el usuario** ("Quiero que me hagas un programa basado en Python para crear bots de trading"): no inventa exchange ni estrategia como requisitos (van a `necessary_decisions`/`deferrable_decisions` respectivamente), identifica solo 2 decisiones realmente bloqueantes (mercado/broker, real vs. simulación), recomienda arquitectura y librerías marcándolas explícitamente como recomendación, el rol incluye 5 comportamientos concretos (no solo la etiqueta "experto"), y el `final_prompt` es un párrafo compacto que integra todo sin listar cada categoría por separado.
+
+## Idea futura (no planificada todavía)
+
+"Hilo de prompts" por proyecto: si un proyecto es largo y necesita varias peticiones relacionadas, que la aplicación recuerde el contexto entre esas peticiones del mismo proyecto, pero lo olvide por completo al cambiar de proyecto. Ahora mismo cada petición ya es independiente (no hay memoria entre peticiones), así que esto sería añadir memoria *dentro* de un mismo proyecto, no quitarla. Pendiente de diseño (cómo se identifica un "proyecto", dónde se guarda el historial).
+
 ## Hecho
 
 - Estructura del proyecto (frontend React+Vite+TS, backend Express+TS)
@@ -17,9 +46,18 @@
 - Interfaz de la app, textos fijos del código y documentación del repositorio traducidos a castellano (2026-09-15). El contenido generado por DeepSeek sigue respondiendo en el idioma en que el usuario escriba su petición — ver [DECISIONS.md](DECISIONS.md).
 - Documentación base: README, CLAUDE.md, este archivo, DECISIONS.md
 
+## v0.4.1 — Corrección: error "La respuesta de DeepSeek no es JSON válido"
+
+Tras publicar v0.4.0 se detectó que la petición de prueba de bots de trading fallaba con bastante frecuencia (~50% de las veces) con ese error. Diagnóstico confirmado con `finish_reason: "length"` en la respuesta cruda: el nuevo esquema (más campos que antes: `role`, `necessary_decisions`, `deferrable_decisions`, `recommendations`) genera respuestas largas, y la llamada a la API no fijaba `max_tokens`, dejándola en un valor por defecto insuficiente que cortaba el JSON a medias.
+
+Solución en `server/deepseek.ts`:
+- `max_tokens: 8192` explícito en la llamada (el modelo `deepseek-flash` admite hasta 384K de salida, así que hay margen de sobra).
+- Reintento automático: si el JSON sale inválido o no cumple el esquema, se reintenta una vez más antes de devolver error al usuario.
+
+Verificado con 10 llamadas reales consecutivas tras el fix: 10/10 correctas (antes, 7 de 13 fallaban).
+
 ## Pendiente / no hecho todavía
 
-- Considerar un reintento automático (1 retry) cuando la respuesta de DeepSeek no cumple el esquema, ya que se ha observado que pasa ocasionalmente. De momento el backend simplemente devuelve error 502 y hay que repetir la petición manualmente.
 - Posible mejora del system prompt (detectada revisando la respuesta del caso "bot de trading"): el `final_prompt` no siempre repite con la misma fuerza que `claude_code.documentation_to_create` la instrucción de crear documentación persistente (CLAUDE.md/docs/), y los criterios de verificación no siempre incluyen comprobar que no se han subido credenciales a git pese a que las instrucciones persistentes sí lo piden. Ajuste menor, no bloqueante.
 - Sin tests automatizados
 - Sin persistencia/historial de peticiones (deliberadamente fuera de v1, ver DECISIONS.md)
