@@ -175,8 +175,19 @@ El usuario, revisando el caso real de AzerothCore, detectó que la sección de C
 
 **Verificado con el mismo caso real de AzerothCore:** `claude_code.decision_references` ahora solo contiene las 4 decisiones de `important_pending_decisions` (enfoque C++/Lua, significado de "torneig de twins", economía de la subhasta, specs de NPCs); ninguna de las 4 `recommendations` ("seguir estructura oficial", "reutilizar proyectos de GitHub", "orden de desarrollo", "configurabilidad") aparece ya en esa lista — en su lugar, la recomendación de seguir la estructura oficial se refleja correctamente en `claude_code.persistent_instructions`.
 
+## v0.11.0 — Diseño visual, acceso remoto vía túnel, y ajuste de max_tokens
+
+**Diagnóstico de lentitud:** el usuario reportó que la aplicación tarda mucho en responder. Medido con una petición real (software con `claude_code_workspace`): **68 segundos**, con una respuesta de ~22.500 caracteres (~6.000 tokens). Causa: se hace una sola llamada grande a DeepSeek que junta análisis completo + recomendación de IA + `CLAUDE.md`/`TODO.md`, en vez de varias llamadas pequeñas — decisión de diseño original para minimizar coste, cuyo coste es el tiempo de espera. No se ha resuelto en esta versión (ver "Pendiente"); solo se subió `max_tokens` de 16384 a 24576 de forma preventiva, ya que el patrón histórico (v0.4.1, v0.9.1) es que el proyecto tiende a superar el límite anterior según crece el system prompt.
+
+**Diseño visual:** rediseño completo de `src/index.css` con un sistema de tokens propio — acento índigo (`#5b5fef` claro / `#8b8ef8` oscuro), neutros con matiz violeta en vez de gris puro, tipografía Fraunces (serif, títulos) + Inter (cuerpo) + JetBrains Mono (prompt final, bloques de código, metadatos), cargadas vía Google Fonts en `index.html`. Cada tipo de sección lleva un borde lateral de color según su naturaleza (azul para Claude Code/rol, verde para recomendaciones y el prompt final, ámbar para decisiones importantes) en vez de un estilo uniforme. Se mantuvieron todas las clases existentes usadas por los componentes React (verificado cruzando `className` de los componentes contra las reglas CSS) — cambio solo de apariencia, ninguna estructura tocada.
+
+**Acceso remoto:** `vite.config.ts` ahora tiene `allowedHosts: true`, necesario para poder exponer el servidor de desarrollo a través de un túnel temporal (Cloudflare Tunnel u otro) con hostname aleatorio — sin esto, Vite rechaza con 403 cualquier petición cuyo `Host` no reconozca. Solo afecta al servidor de desarrollo local, nunca a producción (esta app no tiene despliegue).
+
+Verificado: `npm run typecheck`, `npm test` (15/15) y `npm run build` sin errores.
+
 ## Pendiente / no hecho todavía
 
+- **Lentitud de la respuesta (68s en el caso más pesado):** no resuelto todavía, solo mitigado preventivamente. Opciones evaluadas con el usuario pendientes de decidir: mostrar progreso/streaming en vez de pantalla en blanco; generar `claude_code_workspace` en una segunda llamada más pequeña solo cuando el usuario confirma que lo quiere (en vez de siempre, aunque tarde en responder Sí/No); o medir si otro modelo (`deepseek-v4-pro`, ya configurado en `.env` pendiente de que el usuario reinicie `npm run dev` para probarlo) cambia el tiempo sin perder calidad.
 - Entrega del entorno de trabajo de Claude Code solo por copiar/pegar archivo a archivo — no genera un .zip descargable ni escribe directamente al disco (la app no tiene acceso al sistema de archivos del usuario). Aceptado conscientemente para esta versión; podría mejorarse más adelante si aporta valor suficiente.
 
 - Botón para borrar la petición actual y empezar una consulta nueva, cerca del campo de entrada de texto. Pedido por el usuario, no implementado todavía.

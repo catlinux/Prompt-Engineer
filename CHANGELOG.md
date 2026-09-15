@@ -4,6 +4,15 @@ Aquí se explica, en lenguaje sencillo, qué ha cambiado en cada versión de la 
 
 El número de versión tiene tres partes (por ejemplo 0.2.0): la primera cambia cuando hay un cambio muy grande, la segunda cuando se añade algo nuevo o se mejora algo existente, y la tercera cuando se corrige un error pequeño.
 
+## [0.11.0] - 2026-09-15
+
+### Añadido
+- Nuevo aspecto visual de la aplicación: tipografía con más carácter (Fraunces para los títulos, Inter para el texto, JetBrains Mono para el prompt final y el contenido técnico), colores con más matiz, y cada bloque de la pantalla marcado con un color según su tipo (azul para lo relacionado con Claude Code, verde para recomendaciones y el prompt final, ámbar para decisiones importantes).
+- Ahora se puede usar la aplicación desde fuera de tu red local a través de un túnel temporal (por ejemplo Cloudflare Tunnel), útil para probarla desde el móvil.
+
+### Corregido
+- Ajuste preventivo: se sube de nuevo el límite de longitud de respuesta (de 16384 a 24576) para reducir la probabilidad de que vuelva a aparecer el error "La respuesta de DeepSeek no es JSON válido" a medida que la aplicación crece.
+
 ## [0.10.2] - 2026-09-15
 
 ### Corregido
